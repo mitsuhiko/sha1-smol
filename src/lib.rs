@@ -17,8 +17,6 @@
 
 #![experimental]
 
-extern crate serialize;
-
 use std::io::{MemWriter, BufWriter};
 
 
@@ -147,9 +145,12 @@ impl Sha1 {
         let mut w = MemWriter::new();
         w.write(self.data[]);
         w.write_u8(0x80 as u8);
-        w.write(Vec::from_elem(56 - self.data.len() - 1, 0x00 as u8)[]);
+        let padding = (((56 - self.len as int - 1) % 64) + 64) % 64;
+        w.write(Vec::from_elem(padding as uint, 0u8)[]);
         w.write_be_u64(self.len * 8);
-        m.process_block(w.get_ref());
+        for chunk in w.get_ref()[].chunks(64) {
+            m.process_block(chunk);
+        }
 
         let mut w = BufWriter::new(out);
         for &n in m.state.iter() {
@@ -181,6 +182,9 @@ fn test_simple() {
         ("The quick brown fox jumps over the lazy cog",
          "de9f2c7fd25e1b3afad3e85a0bd17d9b100db4b3"),
         ("", "da39a3ee5e6b4b0d3255bfef95601890afd80709"),
+        ("testing\n", "9801739daae44ec5293d4e1f53d3f4d2d426d91c"),
+        ("xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx",
+         "025ecbd5d70f8fb3c5457cd96bab13fda305dc59"),
     ];
 
     for &(s, ref h) in tests.iter() {
