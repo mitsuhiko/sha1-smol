@@ -13,9 +13,6 @@
 //! # }
 //! ```
 
-#![license = "BSD"]
-#![comment = "Minimal implementation of SHA1 for Rust."]
-
 #![feature(slicing_syntax)]
 
 #![experimental]
