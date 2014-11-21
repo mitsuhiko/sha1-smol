@@ -1,0 +1,4 @@
+[package]
+name = "sha1"
+version = "0.0.1"
+authors = ["Armin Ronacher <armin.ronacher@active-4.com>"]
