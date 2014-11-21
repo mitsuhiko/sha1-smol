@@ -4,4 +4,4 @@ version = "0.0.1"
 authors = ["Armin Ronacher <armin.ronacher@active-4.com>"]
 keywords = ["sha1"]
 description = "Minimal implementation of SHA1 for Rust."
-license = "BSD"
+license = "BSD-3-Clause"
