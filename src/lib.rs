@@ -161,7 +161,7 @@ impl Sha1 {
     /// Shortcut for getting `output` into a new vector.
     pub fn digest(&self) -> Vec<u8> {
         let mut buf = Vec::from_elem(20, 0u8);
-        self.output(buf[mut]);
+        self.output(buf.as_mut_slice());
         buf
     }
 
