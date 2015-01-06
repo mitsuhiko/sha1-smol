@@ -17,8 +17,7 @@
 
 #![experimental]
 
-use std::io::{MemWriter, BufWriter};
-
+use std::io::BufWriter;
 
 /// Represents a Sha1 hash object in memory.
 #[derive(Clone)]
@@ -142,7 +141,7 @@ impl Sha1 {
             len: 0,
         };
 
-        let mut w = MemWriter::new();
+        let mut w = Vec::<u8>::new();
         w.write(self.data[]);
         w.write_u8(0x80 as u8);
         let padding = (((56 - self.len as int - 1) % 64) + 64) % 64;
@@ -150,7 +149,7 @@ impl Sha1 {
             w.write_u8(0u8);
         }
         w.write_be_u64(self.len * 8);
-        for chunk in w.get_ref()[].chunks(64) {
+        for chunk in w[].chunks(64) {
             m.process_block(chunk);
         }
 
