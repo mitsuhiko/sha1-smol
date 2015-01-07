@@ -17,6 +17,8 @@
 
 #![experimental]
 
+#[cfg(test)] extern crate test;
+
 use std::io::BufWriter;
 
 /// Represents a Sha1 hash object in memory.
@@ -119,9 +121,8 @@ impl Sha1 {
         d.push_all(data);
 
         for chunk in d[].chunks(64) {
-            self.len += chunk.len() as u64;
-
             if chunk.len() == 64 {
+                self.len += 64;
                 self.process_block(chunk);
             } else {
                 self.data.push_all(chunk);
@@ -136,19 +137,19 @@ impl Sha1 {
         #![allow(unused_must_use)]
 
         let mut m = Sha1 {
-            state: self.state,
+            state: self.state.clone(),
             data: Vec::new(),
             len: 0,
         };
 
         let mut w = Vec::<u8>::new();
         w.write(self.data[]);
-        w.write_u8(0x80 as u8);
-        let padding = (((56 - self.len as int - 1) % 64) + 64) % 64;
+        w.write_u8(0x80u8);
+        let padding = 64 - ((self.data.len() + 9) % 64);
         for _ in range(0, padding) {
             w.write_u8(0u8);
         }
-        w.write_be_u64(self.len * 8);
+        w.write_be_u64((self.data.len() as u64 + self.len) * 8);
         for chunk in w[].chunks(64) {
             m.process_block(chunk);
         }
@@ -172,30 +173,51 @@ impl Sha1 {
     }
 }
 
+#[cfg(test)]
+mod tests {
+    use test::Bencher;
+    use super::Sha1;
 
-#[test]
-fn test_simple() {
-    let mut m = Sha1::new();
+    #[test]
+    fn test_simple() {
+        let mut m = Sha1::new();
 
-    let tests = [
-        ("The quick brown fox jumps over the lazy dog",
-         "2fd4e1c67a2d28fced849ee1bb76e7391b93eb12"),
-        ("The quick brown fox jumps over the lazy cog",
-         "de9f2c7fd25e1b3afad3e85a0bd17d9b100db4b3"),
-        ("", "da39a3ee5e6b4b0d3255bfef95601890afd80709"),
-        ("testing\n", "9801739daae44ec5293d4e1f53d3f4d2d426d91c"),
-        ("xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx",
-         "025ecbd5d70f8fb3c5457cd96bab13fda305dc59"),
-    ];
+        let tests = [
+            ("The quick brown fox jumps over the lazy dog",
+            "2fd4e1c67a2d28fced849ee1bb76e7391b93eb12"),
+            ("The quick brown fox jumps over the lazy cog",
+            "de9f2c7fd25e1b3afad3e85a0bd17d9b100db4b3"),
+            ("", "da39a3ee5e6b4b0d3255bfef95601890afd80709"),
+            ("testing\n", "9801739daae44ec5293d4e1f53d3f4d2d426d91c"),
+            ("xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx",
+            "025ecbd5d70f8fb3c5457cd96bab13fda305dc59"),
+        ];
 
-    for &(s, ref h) in tests.iter() {
-        let data = s.as_bytes();
+        for &(s, ref h) in tests.iter() {
+            let data = s.as_bytes();
 
-        m.reset();
-        m.update(data);
-        let hh = m.hexdigest();
+            m.reset();
+            m.update(data);
+            let hh = m.hexdigest();
 
-        assert_eq!(hh.len(), h.len());
-        assert_eq!(hh[], *h);
+            assert_eq!(hh.len(), h.len());
+            assert_eq!(hh[], *h);
+        }
+    }
+
+    #[bench]
+    fn test_sha1_speed(b: &mut Bencher) {
+        let mut m = Sha1::new();
+        let s = "The quick brown fox jumps over the lazy dog.";
+        let n = 1000u64;
+
+        b.bytes = n * s.len() as u64;
+        b.iter(|| {
+            m.reset();
+            for _ in range(0, n) {
+                m.update(s.as_bytes());
+            }
+            assert_eq!(m.hexdigest()[], "7ca27655f67fceaa78ed2e645a81c7f1d6e249d2");
+        });
     }
 }
