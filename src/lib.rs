@@ -176,7 +176,7 @@ impl Sha1 {
 #[cfg(test)]
 mod tests {
     use test::Bencher;
-    use super::Sha1;
+    use super::{Sha1, to_hex};
 
     #[test]
     fn test_simple() {
@@ -203,6 +203,21 @@ mod tests {
             assert_eq!(hh.len(), h.len());
             assert_eq!(hh[], *h);
         }
+    }
+
+    #[test]
+    fn test_dirty_run() {
+        let mut m = Sha1::new();
+
+        m.update(b"123");
+        let out1 = m.digest();
+
+        m.update(b"123");
+        let out2 = m.digest();
+
+        assert!(out1[] != out2[]);
+        assert_eq!(to_hex(out1[])[], "40bd001563085fc35165329ea1ff5c5ecbdbbeef");
+        assert_eq!(to_hex(out2[])[], "601f1889667efaebb33b8c12572835da3f027f78");
     }
 
     #[bench]
