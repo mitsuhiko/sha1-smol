@@ -21,14 +21,14 @@ use std::io::{MemWriter, BufWriter};
 
 
 /// Represents a Sha1 hash object in memory.
-#[deriving(Clone)]
+#[derive(Clone)]
 pub struct Sha1 {
-    state: [u32, ..5],
+    state: [u32; 5],
     data: Vec<u8>,
     len: u64,
 }
 
-const DEFAULT_STATE : [u32, ..5] =
+const DEFAULT_STATE : [u32; 5] =
     [0x67452301, 0xefcdab89, 0x98badcfe, 0x10325476, 0xc3d2e1f0];
 
 
@@ -55,20 +55,20 @@ impl Sha1 {
     fn process_block(&mut self, block: &[u8]) {
         assert_eq!(block.len(), 64);
 
-        let mut words = [0u32, ..80];
+        let mut words = [0u32; 80];
         for (i, chunk) in block.chunks(4).enumerate() {
             words[i] = (chunk[3] as u32) |
-                       (chunk[2] as u32 << 8) |
-                       (chunk[1] as u32 << 16) |
-                       (chunk[0] as u32 << 24);
+                       ((chunk[2] as u32) << 8) |
+                       ((chunk[1] as u32) << 16) |
+                       ((chunk[0] as u32) << 24);
         }
 
-        let ff = |b: u32, c: u32, d: u32| d ^ (b & (c ^ d));
-        let gg = |b: u32, c: u32, d: u32| b ^ c ^ d;
-        let hh = |b: u32, c: u32, d: u32| (b & c) | (d & (b | c));
-        let ii = |b: u32, c: u32, d: u32| b ^ c ^ d;
+        fn ff(b: u32, c: u32, d: u32) -> u32 { d ^ (b & (c ^ d)) }
+        fn gg(b: u32, c: u32, d: u32) -> u32 { b ^ c ^ d }
+        fn hh(b: u32, c: u32, d: u32) -> u32 { (b & c) | (d & (b | c)) }
+        fn ii(b: u32, c: u32, d: u32) -> u32 { b ^ c ^ d }
 
-        let left_rotate = |x: u32, n: u32| (x << n as uint) | (x >> (32 - n) as uint);
+        fn left_rotate(x: u32, n: u32) -> u32 { (x << n as uint) | (x >> (32 - n) as uint) }
 
         for i in range(16u, 80u) {
             let n = words[i - 3] ^ words[i - 8] ^ words[i - 14] ^ words[i - 16];
@@ -146,7 +146,9 @@ impl Sha1 {
         w.write(self.data[]);
         w.write_u8(0x80 as u8);
         let padding = (((56 - self.len as int - 1) % 64) + 64) % 64;
-        w.write(Vec::from_elem(padding as uint, 0u8)[]);
+        for _ in range(0, padding) {
+            w.write_u8(0u8);
+        }
         w.write_be_u64(self.len * 8);
         for chunk in w.get_ref()[].chunks(64) {
             m.process_block(chunk);
@@ -160,8 +162,8 @@ impl Sha1 {
 
     /// Shortcut for getting `output` into a new vector.
     pub fn digest(&self) -> Vec<u8> {
-        let mut buf = Vec::from_elem(20, 0u8);
-        self.output(buf[mut]);
+        let mut buf = [0u8; 20].to_vec();
+        self.output(&mut *buf[]);
         buf
     }
 
