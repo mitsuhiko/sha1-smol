@@ -163,13 +163,13 @@ impl Sha1 {
     /// Shortcut for getting `output` into a new vector.
     pub fn digest(&self) -> Vec<u8> {
         let mut buf = [0u8; 20].to_vec();
-        self.output(&mut *buf[]);
+        self.output(&mut buf[]);
         buf
     }
 
     /// Shortcut for getting a hex output of the vector.
     pub fn hexdigest(&self) -> String {
-        to_hex(self.digest()[])
+        to_hex(&self.digest()[])
     }
 }
 
