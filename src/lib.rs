@@ -35,7 +35,7 @@ const DEFAULT_STATE : [u32; 5] =
 fn to_hex(input: &[u8]) -> String {
     let mut s = String::new();
     for b in input.iter() {
-        s.push_str(format!("{:02x}", *b)[]);
+        s.push_str(&format!("{:02x}", *b)[]);
     }
     return s;
 }
@@ -143,7 +143,7 @@ impl Sha1 {
         };
 
         let mut w = MemWriter::new();
-        w.write(self.data[]);
+        w.write(&self.data[]);
         w.write_u8(0x80 as u8);
         let padding = (((56 - self.len as int - 1) % 64) + 64) % 64;
         for _ in range(0, padding) {
@@ -163,13 +163,13 @@ impl Sha1 {
     /// Shortcut for getting `output` into a new vector.
     pub fn digest(&self) -> Vec<u8> {
         let mut buf = [0u8; 20].to_vec();
-        self.output(&mut *buf[]);
+        self.output(&mut buf[]);
         buf
     }
 
     /// Shortcut for getting a hex output of the vector.
     pub fn hexdigest(&self) -> String {
-        to_hex(self.digest()[])
+        to_hex(&self.digest()[])
     }
 }
 
