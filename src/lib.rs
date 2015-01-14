@@ -14,8 +14,8 @@
 //! ```
 
 #![feature(slicing_syntax)]
-
-#![experimental]
+#![allow(unstable)]
+#![unstable]
 
 use std::io::{MemWriter, BufWriter};
 
@@ -197,6 +197,6 @@ fn test_simple() {
         let hh = m.hexdigest();
 
         assert_eq!(hh.len(), h.len());
-        assert_eq!(hh[], *h);
+		assert_eq!(hh, *h);
     }
 }
