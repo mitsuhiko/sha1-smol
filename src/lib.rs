@@ -3,7 +3,7 @@
 //! Example:
 //!
 //! ```rust
-//! extern crate sha1;
+//! extern crate "sha1-hasher" as sha1;
 //! use std::hash::Writer;
 //!
 //! # fn main() {
