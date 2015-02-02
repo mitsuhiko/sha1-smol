@@ -15,14 +15,17 @@
 //! ```
 
 #![feature(slicing_syntax)]
-#![allow(unstable)]
+#![feature(collections)]
+#![feature(core)]
+#![feature(hash)]
+#![feature(io)]
 
-#![experimental]
+#![allow(unused_features)]
+#![feature(test)]
 
 #[cfg(test)] extern crate test;
-extern crate serialize;
 
-use std::io::{Writer, BufWriter};
+use std::old_io::{Writer, BufWriter};
 use std::default::Default;
 use std::hash::{self, Hasher};
 
@@ -163,7 +166,7 @@ impl Sha1 {
         };
 
         let mut w = Vec::<u8>::new();
-        w.write(&*self.data);
+        w.write_all(&*self.data);
         w.write_u8(0x80u8);
         let padding = 64 - ((self.data.len() + 9) % 64);
         for _ in range(0, padding) {
