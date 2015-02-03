@@ -13,11 +13,10 @@
 //! # }
 //! ```
 
-#![feature(slicing_syntax)]
-#![allow(unstable)]
+#![feature(slicing_syntax, core, io, collections)]
 #![unstable]
 
-use std::io::{MemWriter, BufWriter};
+use std::old_io::{MemWriter, BufWriter};
 
 
 /// Represents a Sha1 hash object in memory.
@@ -143,7 +142,7 @@ impl Sha1 {
         };
 
         let mut w = MemWriter::new();
-        w.write(&self.data[]);
+        w.write_all(&self.data[]);
         w.write_u8(0x80 as u8);
         let padding = (((56 - self.len as isize - 1) % 64) + 64) % 64;
         for _ in range(0, padding) {
