@@ -1,4 +1,4 @@
-# rust-sha1-hasher
+# rust-sha1-hasher <img src="https://img.shields.io/travis/kstep/rust-sha1-hasher.png?style=flat-square" />
 
 Minimal implementation of SHA1 for Rust. This might go away in the future
 if rust-crypto or some libraries like that split into smaller parts.
