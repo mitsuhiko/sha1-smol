@@ -14,8 +14,8 @@
 //! ```
 
 #![feature(slicing_syntax)]
-
-#![experimental]
+#![allow(unstable)]
+#![unstable]
 
 use std::io::{MemWriter, BufWriter};
 
@@ -35,7 +35,7 @@ const DEFAULT_STATE : [u32; 5] =
 fn to_hex(input: &[u8]) -> String {
     let mut s = String::new();
     for b in input.iter() {
-        s.push_str(format!("{:02x}", *b)[]);
+        s.push_str(&format!("{:02x}", *b)[]);
     }
     return s;
 }
@@ -68,9 +68,9 @@ impl Sha1 {
         fn hh(b: u32, c: u32, d: u32) -> u32 { (b & c) | (d & (b | c)) }
         fn ii(b: u32, c: u32, d: u32) -> u32 { b ^ c ^ d }
 
-        fn left_rotate(x: u32, n: u32) -> u32 { (x << n as uint) | (x >> (32 - n) as uint) }
+        fn left_rotate(x: u32, n: u32) -> u32 { (x << n as usize) | (x >> (32 - n) as usize) }
 
-        for i in range(16u, 80u) {
+        for i in range(16us, 80) {
             let n = words[i - 3] ^ words[i - 8] ^ words[i - 14] ^ words[i - 16];
             words[i] = left_rotate(n, 1);
         }
@@ -81,7 +81,7 @@ impl Sha1 {
         let mut d = self.state[3];
         let mut e = self.state[4];
 
-        for i in range(0u, 80u) {
+        for i in range(0us, 80) {
             let (f, k) = match i {
                 0 ... 19 => (ff(b, c, d), 0x5a827999),
                 20 ... 39 => (gg(b, c, d), 0x6ed9eba1),
@@ -143,9 +143,9 @@ impl Sha1 {
         };
 
         let mut w = MemWriter::new();
-        w.write(self.data[]);
+        w.write(&self.data[]);
         w.write_u8(0x80 as u8);
-        let padding = (((56 - self.len as int - 1) % 64) + 64) % 64;
+        let padding = (((56 - self.len as isize - 1) % 64) + 64) % 64;
         for _ in range(0, padding) {
             w.write_u8(0u8);
         }
@@ -163,13 +163,13 @@ impl Sha1 {
     /// Shortcut for getting `output` into a new vector.
     pub fn digest(&self) -> Vec<u8> {
         let mut buf = [0u8; 20].to_vec();
-        self.output(&mut *buf[]);
+        self.output(&mut buf[]);
         buf
     }
 
     /// Shortcut for getting a hex output of the vector.
     pub fn hexdigest(&self) -> String {
-        to_hex(self.digest()[])
+        to_hex(&self.digest()[])
     }
 }
 
@@ -197,6 +197,6 @@ fn test_simple() {
         let hh = m.hexdigest();
 
         assert_eq!(hh.len(), h.len());
-        assert_eq!(hh[], *h);
+		assert_eq!(hh, *h);
     }
 }
