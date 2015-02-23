@@ -4,7 +4,6 @@
 //!
 //! ```rust
 //! extern crate "sha1-hasher" as sha1;
-//! use std::hash::Writer;
 //!
 //! # fn main() {
 //!
@@ -14,11 +13,10 @@
 //! # }
 //! ```
 
-#![feature(slicing_syntax)]
 #![feature(collections)]
 #![feature(core)]
 #![feature(hash)]
-#![feature(io)]
+#![feature(old_io)]
 
 #![allow(unused_features)]
 #![feature(test)]
@@ -26,8 +24,8 @@
 #[cfg(test)] extern crate test;
 
 use std::old_io::{Writer, BufWriter};
+use std::old_io::IoResult;
 use std::default::Default;
-use std::hash::{self, Hasher};
 
 /// Represents a Sha1 hash object in memory.
 #[derive(Clone)]
@@ -49,20 +47,6 @@ fn to_hex(input: &[u8]) -> String {
     return s;
 }
 
-impl hash::Hasher for Sha1 {
-    type Output = Vec<u8>;
-    fn reset(&mut self) {
-        self.state = DEFAULT_STATE;
-        self.data.clear();
-        self.len = 0;
-    }
-    fn finish(&self) -> Vec<u8> {
-        let mut buf = [0u8; 20].to_vec();
-        self.output(&mut *buf);
-        buf
-    }
-}
-
 impl Default for Sha1 {
     #[inline]
     fn default() -> Sha1 {
@@ -70,14 +54,14 @@ impl Default for Sha1 {
     }
 }
 
-impl hash::Writer for Sha1 {
-    fn write(&mut self, bytes: &[u8]) {
+impl Writer for Sha1 {
+    fn write_all(&mut self, bytes: &[u8]) -> IoResult<()> {
         let mut d = self.data.clone();
         self.data.clear();
 
         d.push_all(bytes);
 
-        for chunk in d[].chunks(64) {
+        for chunk in d[..].chunks(64) {
             if chunk.len() == 64 {
                 self.len += 64;
                 self.process_block(chunk);
@@ -85,6 +69,13 @@ impl hash::Writer for Sha1 {
                 self.data.push_all(chunk);
             }
         }
+
+        Ok(())
+        //Ok(bytes.len())
+    }
+
+    fn flush(&mut self) -> IoResult<()> {
+        Ok(())
     }
 }
 
@@ -98,6 +89,18 @@ impl Sha1 {
             data: Vec::new(),
             len: 0,
         }
+    }
+
+    pub fn reset(&mut self) {
+        self.state = DEFAULT_STATE;
+        self.data.clear();
+        self.len = 0;
+    }
+
+    pub fn finish(&self) -> Vec<u8> {
+        let mut buf = [0u8; 20].to_vec();
+        self.output(&mut *buf);
+        buf
     }
 
     fn process_block(&mut self, block: &[u8]) {
@@ -173,7 +176,7 @@ impl Sha1 {
             w.write_u8(0u8);
         }
         w.write_be_u64((self.data.len() as u64 + self.len) * 8);
-        for chunk in w[].chunks(64) {
+        for chunk in w[..].chunks(64) {
             m.process_block(chunk);
         }
 
@@ -192,7 +195,6 @@ impl Sha1 {
 mod tests {
     use test::Bencher;
     use super::{Sha1, to_hex};
-    use std::hash::{Writer, Hasher};
 
     #[test]
     fn test_simple() {
@@ -213,7 +215,7 @@ mod tests {
             let data = s.as_bytes();
 
             m.reset();
-            m.write(data);
+            m.write_all(data).unwrap();
             let hh = m.hexdigest();
 
             assert_eq!(hh.len(), h.len());
@@ -225,10 +227,10 @@ mod tests {
     fn test_dirty_run() {
         let mut m = Sha1::new();
 
-        m.write(b"123");
+        m.write_all(b"123").unwrap();
         let out1 = m.finish();
 
-        m.write(b"123");
+        m.write_all(b"123").unwrap();
         let out2 = m.finish();
 
         assert!(out1 != out2);
@@ -246,7 +248,7 @@ mod tests {
         b.iter(|| {
             m.reset();
             for _ in range(0, n) {
-                m.write(s.as_bytes());
+                m.write_all(s.as_bytes()).unwrap();
             }
             assert_eq!(m.hexdigest(), "7ca27655f67fceaa78ed2e645a81c7f1d6e249d2");
         });
