@@ -13,10 +13,10 @@
 //! # }
 //! ```
 
-#![feature(slicing_syntax, core, io, collections)]
+#![feature(core, collections, old_io)]
 #![unstable]
 
-use std::old_io::{MemWriter, BufWriter};
+use std::old_io::BufWriter;
 
 
 /// Represents a Sha1 hash object in memory.
@@ -34,7 +34,7 @@ const DEFAULT_STATE : [u32; 5] =
 fn to_hex(input: &[u8]) -> String {
     let mut s = String::new();
     for b in input.iter() {
-        s.push_str(&format!("{:02x}", *b)[]);
+        s.push_str(&format!("{:02x}", *b));
     }
     return s;
 }
@@ -69,7 +69,7 @@ impl Sha1 {
 
         fn left_rotate(x: u32, n: u32) -> u32 { (x << n as usize) | (x >> (32 - n) as usize) }
 
-        for i in range(16us, 80) {
+        for i in range(16, 80) {
             let n = words[i - 3] ^ words[i - 8] ^ words[i - 14] ^ words[i - 16];
             words[i] = left_rotate(n, 1);
         }
@@ -80,7 +80,7 @@ impl Sha1 {
         let mut d = self.state[3];
         let mut e = self.state[4];
 
-        for i in range(0us, 80) {
+        for i in range(0, 80) {
             let (f, k) = match i {
                 0 ... 19 => (ff(b, c, d), 0x5a827999),
                 20 ... 39 => (gg(b, c, d), 0x6ed9eba1),
@@ -118,7 +118,7 @@ impl Sha1 {
 
         d.push_all(data);
 
-        for chunk in d[].chunks(64) {
+        for chunk in d.chunks(64) {
             self.len += chunk.len() as u64;
 
             if chunk.len() == 64 {
@@ -141,15 +141,16 @@ impl Sha1 {
             len: 0,
         };
 
-        let mut w = MemWriter::new();
-        w.write_all(&self.data[]);
+        let mut w : Vec<u8> = Vec::new();
+        w.write_all(&self.data);
         w.write_u8(0x80 as u8);
         let padding = (((56 - self.len as isize - 1) % 64) + 64) % 64;
         for _ in range(0, padding) {
             w.write_u8(0u8);
         }
+
         w.write_be_u64(self.len * 8);
-        for chunk in w.get_ref()[].chunks(64) {
+        for chunk in w.chunks(64) {
             m.process_block(chunk);
         }
 
@@ -162,13 +163,13 @@ impl Sha1 {
     /// Shortcut for getting `output` into a new vector.
     pub fn digest(&self) -> Vec<u8> {
         let mut buf = [0u8; 20].to_vec();
-        self.output(&mut buf[]);
+        self.output(&mut buf);
         buf
     }
 
     /// Shortcut for getting a hex output of the vector.
     pub fn hexdigest(&self) -> String {
-        to_hex(&self.digest()[])
+        to_hex(&self.digest())
     }
 }
 
