@@ -4,6 +4,7 @@
 //!
 //! ```rust
 //! extern crate "sha1-hasher" as sha1;
+//! use std::io::Write;
 //!
 //! # fn main() {
 //!
@@ -16,16 +17,18 @@
 #![feature(collections)]
 #![feature(core)]
 #![feature(hash)]
-#![feature(old_io)]
+#![feature(io)]
 
 #![allow(unused_features)]
 #![feature(test)]
 
 #[cfg(test)] extern crate test;
 
-use std::old_io::{Writer, BufWriter};
-use std::old_io::IoResult;
+use std::io::{Write, BufWriter};
+use std::io::Result as IoResult;
+use std::num::Int;
 use std::default::Default;
+use std::mem::transmute;
 
 /// Represents a Sha1 hash object in memory.
 #[derive(Clone)]
@@ -54,8 +57,8 @@ impl Default for Sha1 {
     }
 }
 
-impl Writer for Sha1 {
-    fn write_all(&mut self, bytes: &[u8]) -> IoResult<()> {
+impl Write for Sha1 {
+    fn write(&mut self, bytes: &[u8]) -> IoResult<usize> {
         let mut d = self.data.clone();
         self.data.clear();
 
@@ -70,8 +73,7 @@ impl Writer for Sha1 {
             }
         }
 
-        Ok(())
-        //Ok(bytes.len())
+        Ok(bytes.len())
     }
 
     fn flush(&mut self) -> IoResult<()> {
@@ -168,21 +170,21 @@ impl Sha1 {
             len: 0,
         };
 
-        let mut w = Vec::<u8>::new();
-        w.write_all(&*self.data);
-        w.write_u8(0x80u8);
+        let mut w = Vec::<u8>::with_capacity(137);
+        w.push_all(&*self.data);
+        w.push_all(&[0x80u8]);
         let padding = 64 - ((self.data.len() + 9) % 64);
         for _ in range(0, padding) {
-            w.write_u8(0u8);
+            w.push(0u8);
         }
-        w.write_be_u64((self.data.len() as u64 + self.len) * 8);
+        w.push_all(unsafe { &transmute::<_, [u8; 8]>(((self.data.len() as u64 + self.len) * 8).to_be()) });
         for chunk in w[..].chunks(64) {
             m.process_block(chunk);
         }
 
         let mut w = BufWriter::new(out);
         for &n in m.state.iter() {
-            w.write_be_u32(n);
+            w.write_all(unsafe { &transmute::<_, [u8; 4]>(n.to_be()) });
         }
     }
 
@@ -193,6 +195,7 @@ impl Sha1 {
 
 #[cfg(test)]
 mod tests {
+    use std::io::Write;
     use test::Bencher;
     use super::{Sha1, to_hex};
 
@@ -215,7 +218,7 @@ mod tests {
             let data = s.as_bytes();
 
             m.reset();
-            m.write_all(data).unwrap();
+            m.write(data).unwrap();
             let hh = m.hexdigest();
 
             assert_eq!(hh.len(), h.len());
@@ -227,7 +230,7 @@ mod tests {
     fn test_dirty_run() {
         let mut m = Sha1::new();
 
-        m.write_all(b"123").unwrap();
+        m.write(b"123").unwrap();
         let out1 = m.finish();
 
         m.write_all(b"123").unwrap();
