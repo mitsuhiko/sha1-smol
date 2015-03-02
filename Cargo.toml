@@ -1,6 +1,6 @@
 [package]
 name = "sha1-hasher"
-version = "0.0.3"
+version = "0.0.4"
 authors = ["Armin Ronacher <armin.ronacher@active-4.com>", "Konstantin Stepanov <me@kstep.me>"]
 keywords = ["sha1"]
 description = "Minimal implementation of SHA1 for Rust (with fixes and Hasher trait implementation)"
