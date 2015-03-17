@@ -17,7 +17,7 @@
 #![unstable]
 
 use std::old_io::BufWriter;
-
+use std::num::Int;
 
 /// Represents a Sha1 hash object in memory.
 #[derive(Clone)]
@@ -67,11 +67,9 @@ impl Sha1 {
         fn hh(b: u32, c: u32, d: u32) -> u32 { (b & c) | (d & (b | c)) }
         fn ii(b: u32, c: u32, d: u32) -> u32 { b ^ c ^ d }
 
-        fn left_rotate(x: u32, n: u32) -> u32 { (x << n as usize) | (x >> (32 - n) as usize) }
-
         for i in range(16, 80) {
             let n = words[i - 3] ^ words[i - 8] ^ words[i - 14] ^ words[i - 16];
-            words[i] = left_rotate(n, 1);
+            words[i] = n.rotate_left(1);
         }
 
         let mut a = self.state[0];
@@ -89,14 +87,14 @@ impl Sha1 {
                 _ => (0, 0),
             };
 
-            let tmp = left_rotate(a, 5)
+            let tmp = a.rotate_left(5)
                 .wrapping_add(f)
                 .wrapping_add(e)
                 .wrapping_add(k)
                 .wrapping_add(words[i]);
             e = d;
             d = c;
-            c = left_rotate(b, 30);
+            c = b.rotate_left(30);
             b = a;
             a = tmp;
         }
