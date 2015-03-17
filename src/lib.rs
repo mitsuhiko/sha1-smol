@@ -201,3 +201,19 @@ fn test_simple() {
 		assert_eq!(hh, *h);
     }
 }
+
+#[test]
+fn test_multiple_updates() {
+    let mut m = Sha1::new();
+
+    m.reset();
+    m.update("The quick brown ".as_bytes());
+    m.update("fox jumps over ".as_bytes());
+    m.update("the lazy dog".as_bytes());
+    let hh = m.hexdigest();
+
+
+    let h = "2fd4e1c67a2d28fced849ee1bb76e7391b93eb12";
+    assert_eq!(hh.len(), h.len());
+    assert_eq!(hh, &*h);
+}
