@@ -89,7 +89,11 @@ impl Sha1 {
                 _ => (0, 0),
             };
 
-            let tmp = left_rotate(a, 5) + f + e + k + words[i];
+            let tmp = left_rotate(a, 5)
+                .wrapping_add(f)
+                .wrapping_add(e)
+                .wrapping_add(k)
+                .wrapping_add(words[i]);
             e = d;
             d = c;
             c = left_rotate(b, 30);
@@ -97,11 +101,11 @@ impl Sha1 {
             a = tmp;
         }
 
-        self.state[0] += a;
-        self.state[1] += b;
-        self.state[2] += c;
-        self.state[3] += d;
-        self.state[4] += e;
+        self.state[0] = self.state[0].wrapping_add(a);
+        self.state[1] = self.state[1].wrapping_add(b);
+        self.state[2] = self.state[2].wrapping_add(c);
+        self.state[3] = self.state[3].wrapping_add(d);
+        self.state[4] = self.state[4].wrapping_add(e);
     }
 
     /// Resets the hash object to it's initial state.
