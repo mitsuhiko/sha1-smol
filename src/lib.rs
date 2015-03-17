@@ -121,9 +121,8 @@ impl Sha1 {
         d.push_all(data);
 
         for chunk in d.chunks(64) {
-            self.len += chunk.len() as u64;
-
             if chunk.len() == 64 {
+                self.len += chunk.len() as u64;
                 self.process_block(chunk);
             } else {
                 self.data.push_all(chunk);
@@ -146,12 +145,12 @@ impl Sha1 {
         let mut w : Vec<u8> = Vec::new();
         w.write_all(&self.data);
         w.write_u8(0x80 as u8);
-        let padding = (((56 - self.len as isize - 1) % 64) + 64) % 64;
+        let padding = 64 - ((self.data.len() + 9) % 64);
         for _ in range(0, padding) {
             w.write_u8(0u8);
         }
 
-        w.write_be_u64(self.len * 8);
+        w.write_be_u64((self.data.len() as u64 + self.len) * 8);
         for chunk in w.chunks(64) {
             m.process_block(chunk);
         }
