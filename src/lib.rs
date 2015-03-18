@@ -13,11 +13,14 @@
 //! # }
 //! ```
 
-#![feature(core, collections, old_io)]
+#![feature(core, collections)]
 #![unstable]
 
-use std::old_io::BufWriter;
+extern crate byteorder;
+use std::io::{Cursor,Write};
+use std::io::BufWriter;
 use std::num::Int;
+use byteorder::{BigEndian, WriteBytesExt};
 
 /// Represents a Sha1 hash object in memory.
 #[derive(Clone)]
@@ -142,22 +145,22 @@ impl Sha1 {
             len: 0,
         };
 
-        let mut w : Vec<u8> = Vec::new();
-        w.write_all(&self.data);
-        w.write_u8(0x80 as u8);
+        let mut w : Cursor<Vec<u8>> = Cursor::new(Vec::new());
+        w.write(&*self.data);
+        w.write_all(&[0x80]);
         let padding = 64 - ((self.data.len() + 9) % 64);
         for _ in range(0, padding) {
-            w.write_u8(0u8);
+            w.write(&[0u8]);
         }
 
-        w.write_be_u64((self.data.len() as u64 + self.len) * 8);
-        for chunk in w.chunks(64) {
+        w.write_u64::<BigEndian>((self.data.len() as u64 + self.len) * 8);
+        for chunk in w.into_inner().chunks(64) {
             m.process_block(chunk);
         }
 
         let mut w = BufWriter::new(out);
         for &n in m.state.iter() {
-            w.write_be_u32(n);
+            w.write_u32::<BigEndian>(n);
         }
     }
 
