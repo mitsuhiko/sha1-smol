@@ -5,6 +5,7 @@ authors = ["Armin Ronacher <armin.ronacher@active-4.com>"]
 keywords = ["sha1"]
 description = "Minimal implementation of SHA1 for Rust."
 license = "BSD-3-Clause"
+repository = "https://github.com/mitsuhiko/rust-sha1"
 
 [dependencies]
 byteorder = "*"
