@@ -8,7 +8,7 @@
 //!
 //! let mut m = sha1::Sha1::new();
 //! m.update("Hello World!".as_bytes());
-//! assert_eq!(m.hexdigest().as_slice(),
+//! assert_eq!(m.hexdigest(),
 //!            "2ef7bde608ce5404e97d5f042f95f89f1c232871");
 //! # }
 //! ```
