@@ -70,7 +70,7 @@ impl Sha1 {
         fn hh(b: u32, c: u32, d: u32) -> u32 { (b & c) | (d & (b | c)) }
         fn ii(b: u32, c: u32, d: u32) -> u32 { b ^ c ^ d }
 
-        for i in range(16, 80) {
+        for i in 16..80 {
             let n = words[i - 3] ^ words[i - 8] ^ words[i - 14] ^ words[i - 16];
             words[i] = n.rotate_left(1);
         }
@@ -81,7 +81,7 @@ impl Sha1 {
         let mut d = self.state[3];
         let mut e = self.state[4];
 
-        for i in range(0, 80) {
+        for i in 0..80 {
             let (f, k) = match i {
                 0 ... 19 => (ff(b, c, d), 0x5a827999),
                 20 ... 39 => (gg(b, c, d), 0x6ed9eba1),
@@ -149,7 +149,7 @@ impl Sha1 {
         w.write(&*self.data);
         w.write_all(&[0x80]);
         let padding = 64 - ((self.data.len() + 9) % 64);
-        for _ in range(0, padding) {
+        for _ in 0..padding {
             w.write(&[0u8]);
         }
 
