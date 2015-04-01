@@ -8,16 +8,19 @@
 //!
 //! let mut m = sha1::Sha1::new();
 //! m.update("Hello World!".as_bytes());
-//! assert_eq!(m.hexdigest().as_slice(),
+//! assert_eq!(m.hexdigest(),
 //!            "2ef7bde608ce5404e97d5f042f95f89f1c232871");
 //! # }
 //! ```
 
-#![feature(core, collections, old_io)]
+#![feature(core, collections)]
 #![unstable]
 
-use std::old_io::BufWriter;
-
+extern crate byteorder;
+use std::io::{Cursor,Write};
+use std::io::BufWriter;
+use std::num::Int;
+use byteorder::{BigEndian, WriteBytesExt};
 
 /// Represents a Sha1 hash object in memory.
 #[derive(Clone)]
@@ -67,11 +70,9 @@ impl Sha1 {
         fn hh(b: u32, c: u32, d: u32) -> u32 { (b & c) | (d & (b | c)) }
         fn ii(b: u32, c: u32, d: u32) -> u32 { b ^ c ^ d }
 
-        fn left_rotate(x: u32, n: u32) -> u32 { (x << n as usize) | (x >> (32 - n) as usize) }
-
-        for i in range(16, 80) {
+        for i in 16..80 {
             let n = words[i - 3] ^ words[i - 8] ^ words[i - 14] ^ words[i - 16];
-            words[i] = left_rotate(n, 1);
+            words[i] = n.rotate_left(1);
         }
 
         let mut a = self.state[0];
@@ -80,7 +81,7 @@ impl Sha1 {
         let mut d = self.state[3];
         let mut e = self.state[4];
 
-        for i in range(0, 80) {
+        for i in 0..80 {
             let (f, k) = match i {
                 0 ... 19 => (ff(b, c, d), 0x5a827999),
                 20 ... 39 => (gg(b, c, d), 0x6ed9eba1),
@@ -89,19 +90,23 @@ impl Sha1 {
                 _ => (0, 0),
             };
 
-            let tmp = left_rotate(a, 5) + f + e + k + words[i];
+            let tmp = a.rotate_left(5)
+                .wrapping_add(f)
+                .wrapping_add(e)
+                .wrapping_add(k)
+                .wrapping_add(words[i]);
             e = d;
             d = c;
-            c = left_rotate(b, 30);
+            c = b.rotate_left(30);
             b = a;
             a = tmp;
         }
 
-        self.state[0] += a;
-        self.state[1] += b;
-        self.state[2] += c;
-        self.state[3] += d;
-        self.state[4] += e;
+        self.state[0] = self.state[0].wrapping_add(a);
+        self.state[1] = self.state[1].wrapping_add(b);
+        self.state[2] = self.state[2].wrapping_add(c);
+        self.state[3] = self.state[3].wrapping_add(d);
+        self.state[4] = self.state[4].wrapping_add(e);
     }
 
     /// Resets the hash object to it's initial state.
@@ -119,9 +124,8 @@ impl Sha1 {
         d.push_all(data);
 
         for chunk in d.chunks(64) {
-            self.len += chunk.len() as u64;
-
             if chunk.len() == 64 {
+                self.len += chunk.len() as u64;
                 self.process_block(chunk);
             } else {
                 self.data.push_all(chunk);
@@ -141,22 +145,22 @@ impl Sha1 {
             len: 0,
         };
 
-        let mut w : Vec<u8> = Vec::new();
-        w.write_all(&self.data);
-        w.write_u8(0x80 as u8);
-        let padding = (((56 - self.len as isize - 1) % 64) + 64) % 64;
-        for _ in range(0, padding) {
-            w.write_u8(0u8);
+        let mut w : Cursor<Vec<u8>> = Cursor::new(Vec::new());
+        w.write(&*self.data);
+        w.write_all(&[0x80]);
+        let padding = 64 - ((self.data.len() + 9) % 64);
+        for _ in 0..padding {
+            w.write(&[0u8]);
         }
 
-        w.write_be_u64(self.len * 8);
-        for chunk in w.chunks(64) {
+        w.write_u64::<BigEndian>((self.data.len() as u64 + self.len) * 8);
+        for chunk in w.into_inner().chunks(64) {
             m.process_block(chunk);
         }
 
         let mut w = BufWriter::new(out);
         for &n in m.state.iter() {
-            w.write_be_u32(n);
+            w.write_u32::<BigEndian>(n);
         }
     }
 
@@ -199,4 +203,20 @@ fn test_simple() {
         assert_eq!(hh.len(), h.len());
 		assert_eq!(hh, *h);
     }
+}
+
+#[test]
+fn test_multiple_updates() {
+    let mut m = Sha1::new();
+
+    m.reset();
+    m.update("The quick brown ".as_bytes());
+    m.update("fox jumps over ".as_bytes());
+    m.update("the lazy dog".as_bytes());
+    let hh = m.hexdigest();
+
+
+    let h = "2fd4e1c67a2d28fced849ee1bb76e7391b93eb12";
+    assert_eq!(hh.len(), h.len());
+    assert_eq!(hh, &*h);
 }
