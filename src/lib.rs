@@ -13,13 +13,12 @@
 //! # }
 //! ```
 
-#![feature(core, collections)]
+#![feature(collections)]
 #![unstable]
 
 extern crate byteorder;
 use std::io::{Cursor,Write};
 use std::io::BufWriter;
-use std::num::Int;
 use byteorder::{BigEndian, WriteBytesExt};
 
 /// Represents a Sha1 hash object in memory.
