@@ -13,7 +13,6 @@
 //! # }
 //! ```
 
-#![feature(collections)]
 #![unstable]
 
 extern crate byteorder;
@@ -120,14 +119,14 @@ impl Sha1 {
         let mut d = self.data.clone();
         self.data.clear();
 
-        d.push_all(data);
+        d.extend(data.iter().cloned());
 
         for chunk in d.chunks(64) {
             if chunk.len() == 64 {
                 self.len += chunk.len() as u64;
                 self.process_block(chunk);
             } else {
-                self.data.push_all(chunk);
+                self.data.extend(chunk.iter().cloned());
             }
         }
     }
