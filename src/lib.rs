@@ -13,8 +13,6 @@
 //! # }
 //! ```
 
-#![unstable]
-
 extern crate byteorder;
 use std::io::{Cursor,Write};
 use std::io::BufWriter;
