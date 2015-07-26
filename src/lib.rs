@@ -121,7 +121,7 @@ impl Sha1 {
 
         for chunk in d.chunks(64) {
             if chunk.len() == 64 {
-                self.len += chunk.len() as u64;
+                self.len += 64;
                 self.process_block(chunk);
             } else {
                 self.data.extend(chunk.iter().cloned());
@@ -215,4 +215,19 @@ fn test_multiple_updates() {
     let h = "2fd4e1c67a2d28fced849ee1bb76e7391b93eb12";
     assert_eq!(hh.len(), h.len());
     assert_eq!(hh, &*h);
+}
+
+#[test]
+fn test_sha1_loop() {
+    let mut m = Sha1::new();
+    let s = "The quick brown fox jumps over the lazy dog.";
+    let n = 1000u64;
+
+    for _ in 0..3 {
+        m.reset();
+        for _ in 0..n {
+            m.update(s.as_bytes());
+        }
+        assert_eq!(m.hexdigest(), "7ca27655f67fceaa78ed2e645a81c7f1d6e249d2");
+    }
 }
