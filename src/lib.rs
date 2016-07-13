@@ -7,52 +7,167 @@
 //! # fn main() {
 //!
 //! let mut m = sha1::Sha1::new();
-//! m.update("Hello World!".as_bytes());
-//! assert_eq!(m.hexdigest(),
+//! m.update(b"Hello World!");
+//! assert_eq!(m.digest().to_string(),
 //!            "2ef7bde608ce5404e97d5f042f95f89f1c232871");
 //! # }
 //! ```
 
-extern crate byteorder;
-use std::io::{Cursor,Write};
-use std::io::BufWriter;
-use byteorder::{BigEndian, WriteBytesExt};
+#![no_std]
+#![deny(missing_docs)]
+
+use core::cmp;
+use core::fmt;
 
 /// Represents a Sha1 hash object in memory.
 #[derive(Clone)]
 pub struct Sha1 {
-    state: [u32; 5],
-    data: Vec<u8>,
+    state: Sha1State,
+    blocks: Blocks,
     len: u64,
 }
 
-const DEFAULT_STATE : [u32; 5] =
-    [0x67452301, 0xefcdab89, 0x98badcfe, 0x10325476, 0xc3d2e1f0];
-
-
-fn to_hex(input: &[u8]) -> String {
-    let mut s = String::new();
-    for b in input.iter() {
-        s.push_str(&format!("{:02x}", *b));
-    }
-    return s;
+struct Blocks {
+    len: u32,
+    block: [u8; 64],
 }
 
+#[derive(Copy, Clone)]
+struct Sha1State {
+    state: [u32; 5],
+}
+
+/// Digest generated from a `Sha1` instance.
+///
+/// A digest can be formatted to view the digest as a hex string, or the bytes
+/// can be extracted for later processing.
+pub struct Digest {
+    data: Sha1State,
+}
+
+const DEFAULT_STATE: Sha1State = Sha1State {
+    state: [0x67452301, 0xefcdab89, 0x98badcfe, 0x10325476, 0xc3d2e1f0],
+};
 
 impl Sha1 {
-
     /// Creates an fresh sha1 hash object.
     pub fn new() -> Sha1 {
         Sha1 {
             state: DEFAULT_STATE,
-            data: Vec::new(),
             len: 0,
+            blocks: Blocks {
+                len: 0,
+                block: [0; 64],
+            },
         }
     }
 
-    fn process_block(&mut self, block: &[u8]) {
-        assert_eq!(block.len(), 64);
+    /// Resets the hash object to it's initial state.
+    pub fn reset(&mut self) {
+        self.state = DEFAULT_STATE;
+        self.len = 0;
+        self.blocks.len = 0;
+    }
 
+    /// Update hash with input data.
+    pub fn update(&mut self, data: &[u8]) {
+        let len = &mut self.len;
+        let state = &mut self.state;
+        self.blocks.input(data, |chunk| {
+            *len += 64;
+            state.process(chunk);
+        })
+    }
+
+    /// Retrieve digest result.
+    pub fn digest(&self) -> Digest {
+        let mut state = self.state;
+        let bits = (self.len + (self.blocks.len as u64)) * 8;
+        let extra = [
+            (bits >> 56) as u8,
+            (bits >> 48) as u8,
+            (bits >> 40) as u8,
+            (bits >> 32) as u8,
+            (bits >> 24) as u8,
+            (bits >> 16) as u8,
+            (bits >>  8) as u8,
+            (bits >>  0) as u8,
+        ];
+        let mut last = [0; 128];
+        let blocklen = self.blocks.len as usize;
+        last[..blocklen].clone_from_slice(&self.blocks.block[..blocklen]);
+        last[blocklen] = 0x80;
+
+        if blocklen < 56 {
+            last[56..64].clone_from_slice(&extra);
+            state.process(&last[0..64]);
+        } else {
+            last[120..128].clone_from_slice(&extra);
+            state.process(&last[0..64]);
+            state.process(&last[64..128]);
+        }
+
+        Digest { data: state }
+    }
+}
+
+impl Digest {
+    /// Returns the 160 bit (20 byte) digest as a byte array.
+    pub fn bytes(&self) -> [u8; 20] {
+        [
+            (self.data.state[0] >> 24) as u8,
+            (self.data.state[0] >> 16) as u8,
+            (self.data.state[0] >>  8) as u8,
+            (self.data.state[0] >>  0) as u8,
+            (self.data.state[1] >> 24) as u8,
+            (self.data.state[1] >> 16) as u8,
+            (self.data.state[1] >>  8) as u8,
+            (self.data.state[1] >>  0) as u8,
+            (self.data.state[2] >> 24) as u8,
+            (self.data.state[2] >> 16) as u8,
+            (self.data.state[2] >>  8) as u8,
+            (self.data.state[2] >>  0) as u8,
+            (self.data.state[3] >> 24) as u8,
+            (self.data.state[3] >> 16) as u8,
+            (self.data.state[3] >>  8) as u8,
+            (self.data.state[3] >>  0) as u8,
+            (self.data.state[4] >> 24) as u8,
+            (self.data.state[4] >> 16) as u8,
+            (self.data.state[4] >>  8) as u8,
+            (self.data.state[4] >>  0) as u8,
+        ]
+    }
+}
+
+impl Blocks {
+    fn input<F>(&mut self, mut input: &[u8], mut f: F) where F: FnMut(&[u8]) {
+        if self.len > 0 {
+            let len = self.len as usize;
+            let amt = cmp::min(input.len(), self.block.len() - len);
+            self.block[len..len + amt].clone_from_slice(&input[..amt]);
+            if len + amt == self.block.len() {
+                f(&self.block);
+                self.len = 0;
+                input = &input[amt..];
+            } else {
+                self.len += amt as u32;
+                return
+            }
+        }
+        assert_eq!(self.len, 0);
+        for chunk in input.chunks(64) {
+            if chunk.len() == 64 {
+                f(chunk)
+            } else {
+                self.block[..chunk.len()].clone_from_slice(chunk);
+                self.len = chunk.len() as u32;
+            }
+        }
+    }
+}
+
+impl Sha1State {
+    fn process(&mut self, block: &[u8]) {
         let mut words = [0u32; 80];
         for (i, chunk) in block.chunks(4).enumerate() {
             words[i] = (chunk[3] as u32) |
@@ -87,10 +202,10 @@ impl Sha1 {
             };
 
             let tmp = a.rotate_left(5)
-                .wrapping_add(f)
-                .wrapping_add(e)
-                .wrapping_add(k)
-                .wrapping_add(words[i]);
+                       .wrapping_add(f)
+                       .wrapping_add(e)
+                       .wrapping_add(k)
+                       .wrapping_add(words[i]);
             e = d;
             d = c;
             c = b.rotate_left(30);
@@ -104,130 +219,112 @@ impl Sha1 {
         self.state[3] = self.state[3].wrapping_add(d);
         self.state[4] = self.state[4].wrapping_add(e);
     }
+}
 
-    /// Resets the hash object to it's initial state.
-    pub fn reset(&mut self) {
-        self.state = DEFAULT_STATE;
-        self.data.clear();
-        self.len = 0;
-    }
-
-    /// Update hash with input data.
-    pub fn update(&mut self, data: &[u8]) {
-        let mut d = self.data.clone();
-        self.data.clear();
-
-        d.extend(data.iter().cloned());
-
-        for chunk in d.chunks(64) {
-            if chunk.len() == 64 {
-                self.len += 64;
-                self.process_block(chunk);
-            } else {
-                self.data.extend(chunk.iter().cloned());
-            }
-        }
-    }
-
-    /// Retrieve digest result.  The output must be large enough to
-    /// contain result (20 bytes).
-    pub fn output(&self, out: &mut [u8]) {
-        // these are unlikely to fail, since we're writing to memory
-        #![allow(unused_must_use)]
-
-        let mut m = Sha1 {
-            state: self.state,
-            data: Vec::new(),
-            len: 0,
-        };
-
-        let mut w : Cursor<Vec<u8>> = Cursor::new(Vec::new());
-        w.write(&*self.data);
-        w.write_all(&[0x80]);
-        let padding = 64 - ((self.data.len() + 9) % 64);
-        for _ in 0..padding {
-            w.write(&[0u8]);
-        }
-
-        w.write_u64::<BigEndian>((self.data.len() as u64 + self.len) * 8);
-        for chunk in w.into_inner().chunks(64) {
-            m.process_block(chunk);
-        }
-
-        let mut w = BufWriter::new(out);
-        for &n in m.state.iter() {
-            w.write_u32::<BigEndian>(n);
-        }
-    }
-
-    /// Shortcut for getting `output` into a new vector.
-    pub fn digest(&self) -> Vec<u8> {
-        let mut buf = [0u8; 20].to_vec();
-        self.output(&mut buf);
-        buf
-    }
-
-    /// Shortcut for getting a hex output of the vector.
-    pub fn hexdigest(&self) -> String {
-        to_hex(&self.digest())
+impl Clone for Blocks {
+    fn clone(&self) -> Blocks {
+        Blocks { ..*self }
     }
 }
 
+impl fmt::Display for Digest {
+    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+        for byte in self.data.state.iter() {
+            try!(write!(f, "{:08x}", byte));
+        }
+        Ok(())
+    }
+}
 
-#[test]
-fn test_simple() {
-    let mut m = Sha1::new();
+#[cfg(test)]
+mod tests {
+    extern crate std;
+    extern crate rand;
+    extern crate openssl;
 
-    let tests = [
-        ("The quick brown fox jumps over the lazy dog",
-         "2fd4e1c67a2d28fced849ee1bb76e7391b93eb12"),
-        ("The quick brown fox jumps over the lazy cog",
-         "de9f2c7fd25e1b3afad3e85a0bd17d9b100db4b3"),
-        ("", "da39a3ee5e6b4b0d3255bfef95601890afd80709"),
-        ("testing\n", "9801739daae44ec5293d4e1f53d3f4d2d426d91c"),
-        ("xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx",
-         "025ecbd5d70f8fb3c5457cd96bab13fda305dc59"),
-    ];
+    use self::std::prelude::v1::*;
+    use self::std::io::Write;
 
-    for &(s, ref h) in tests.iter() {
-        let data = s.as_bytes();
+    use Sha1;
+
+    #[test]
+    fn test_simple() {
+        let mut m = Sha1::new();
+
+        let tests = [
+            ("The quick brown fox jumps over the lazy dog",
+             "2fd4e1c67a2d28fced849ee1bb76e7391b93eb12"),
+            ("The quick brown fox jumps over the lazy cog",
+             "de9f2c7fd25e1b3afad3e85a0bd17d9b100db4b3"),
+            ("", "da39a3ee5e6b4b0d3255bfef95601890afd80709"),
+            ("testing\n", "9801739daae44ec5293d4e1f53d3f4d2d426d91c"),
+            ("xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx",
+             "025ecbd5d70f8fb3c5457cd96bab13fda305dc59"),
+        ];
+
+        for &(s, ref h) in tests.iter() {
+            let data = s.as_bytes();
+
+            m.reset();
+            m.update(data);
+            let hh = m.digest().to_string();
+
+            assert_eq!(hh.len(), h.len());
+            assert_eq!(hh, *h);
+        }
+    }
+
+    #[test]
+    fn test_multiple_updates() {
+        let mut m = Sha1::new();
 
         m.reset();
-        m.update(data);
-        let hh = m.hexdigest();
+        m.update("The quick brown ".as_bytes());
+        m.update("fox jumps over ".as_bytes());
+        m.update("the lazy dog".as_bytes());
+        let hh = m.digest().to_string();
 
+
+        let h = "2fd4e1c67a2d28fced849ee1bb76e7391b93eb12";
         assert_eq!(hh.len(), h.len());
-		assert_eq!(hh, *h);
+        assert_eq!(hh, &*h);
     }
-}
 
-#[test]
-fn test_multiple_updates() {
-    let mut m = Sha1::new();
+    #[test]
+    fn test_sha1_loop() {
+        let mut m = Sha1::new();
+        let s = "The quick brown fox jumps over the lazy dog.";
+        let n = 1000u64;
 
-    m.reset();
-    m.update("The quick brown ".as_bytes());
-    m.update("fox jumps over ".as_bytes());
-    m.update("the lazy dog".as_bytes());
-    let hh = m.hexdigest();
-
-
-    let h = "2fd4e1c67a2d28fced849ee1bb76e7391b93eb12";
-    assert_eq!(hh.len(), h.len());
-    assert_eq!(hh, &*h);
-}
-
-#[test]
-fn test_sha1_loop() {
-    let mut m = Sha1::new();
-    let s = "The quick brown fox jumps over the lazy dog.";
-    let n = 1000u64;
-
-    for _ in 0..3 {
-        m.reset();
-        for _ in 0..n {
-            m.update(s.as_bytes());
+        for _ in 0..3 {
+            m.reset();
+            for _ in 0..n {
+                m.update(s.as_bytes());
+            }
+            assert_eq!(m.digest().to_string(),
+                       "7ca27655f67fceaa78ed2e645a81c7f1d6e249d2");
         }
-        assert_eq!(m.hexdigest(), "7ca27655f67fceaa78ed2e645a81c7f1d6e249d2");
+    }
+
+    #[test]
+    fn spray_and_pray() {
+        use self::rand::Rng;
+
+        let mut rng = rand::thread_rng();
+        let mut m = Sha1::new();
+        let mut bytes = [0; 512];
+
+        for _ in 0..20 {
+            let ty = openssl::crypto::hash::Type::SHA1;
+            let mut r = openssl::crypto::hash::Hasher::new(ty);
+            m.reset();
+            for _ in 0..50 {
+                let len = rng.gen::<usize>() % bytes.len();
+                rng.fill_bytes(&mut bytes[..len]);
+                m.update(&bytes[..len]);
+                r.write(&bytes[..len]).unwrap();
+            }
+            assert_eq!(r.finish(), m.digest().bytes());
+        }
     }
 }
