@@ -260,6 +260,10 @@ mod tests {
             ("testing\n", "9801739daae44ec5293d4e1f53d3f4d2d426d91c"),
             ("xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx",
              "025ecbd5d70f8fb3c5457cd96bab13fda305dc59"),
+            ("xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx",
+             "4300320394f7ee239bcdce7d3b8bcee173a0cd5c"),
+            ("xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx",
+             "cef734ba81a024479e09eb5a75b6ddae62e6abf1"),
         ];
 
         for &(s, ref h) in tests.iter() {
