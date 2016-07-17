@@ -229,8 +229,8 @@ impl Clone for Blocks {
 
 impl fmt::Display for Digest {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
-        for byte in self.data.state.iter() {
-            try!(write!(f, "{:08x}", byte));
+        for i in self.data.state.iter() {
+            try!(write!(f, "{:08x}", i));
         }
         Ok(())
     }
