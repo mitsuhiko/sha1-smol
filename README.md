@@ -1,9 +1,14 @@
-# rust-sha1
+# SHA1 [![Version][version-img]][version-url] [![Documentation][doc-img]][doc-url]
 
-Minimal implementation of SHA1 for Rust.  This might go away in the future
-if rust-crypto or some libraries like that split into smaller parts.
+Rust implementation of [SHA-1][1] hash function.
 
-Right now SHA1 is quite frequently used and many things want to have an
-implementation of it, that does not pull in too much other stuff.
+## Documentation
 
-This is largely based on the hash code in crypto-rs by Koka El Kiwi.
+Available at [docs.rs][doc-url].
+
+[1]: https://en.wikipedia.org/wiki/SHA-1
+
+[version-img]: https://img.shields.io/crates/v/sha1.svg
+[version-url]: https://crates.io/crates/sha1
+[doc-img]: https://docs.rs/sha1/badge.svg
+[doc-url]: https://docs.rs/sha1
