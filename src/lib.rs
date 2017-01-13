@@ -18,6 +18,7 @@
 
 use core::cmp;
 use core::fmt;
+use core::mem;
 
 /// Represents a Sha1 hash object in memory.
 #[derive(Clone)]
@@ -48,6 +49,15 @@ pub struct Digest {
 const DEFAULT_STATE: Sha1State =
     Sha1State { state: [0x67452301, 0xefcdab89, 0x98badcfe, 0x10325476, 0xc3d2e1f0] };
 
+#[inline(always)]
+fn as_block(input: &[u8]) -> &[u8; 64] {
+    unsafe {
+        assert!(input.len() == 64);
+        let arr: &[u8; 64] = mem::transmute(input.as_ptr());
+        arr
+    }
+}
+
 impl Sha1 {
     /// Creates an fresh sha1 hash object.
     pub fn new() -> Sha1 {
@@ -72,9 +82,9 @@ impl Sha1 {
     pub fn update(&mut self, data: &[u8]) {
         let len = &mut self.len;
         let state = &mut self.state;
-        self.blocks.input(data, |chunk| {
-            *len += 64;
-            state.process(chunk);
+        self.blocks.input(data, |block| {
+            *len += block.len() as u64;
+            state.process(block);
         })
     }
 
@@ -97,11 +107,11 @@ impl Sha1 {
 
         if blocklen < 56 {
             last[56..64].clone_from_slice(&extra);
-            state.process(&last[0..64]);
+            state.process(as_block(&last[0..64]));
         } else {
             last[120..128].clone_from_slice(&extra);
-            state.process(&last[0..64]);
-            state.process(&last[64..128]);
+            state.process(as_block(&last[0..64]));
+            state.process(as_block(&last[64..128]));
         }
 
         Digest { data: state }
@@ -136,7 +146,7 @@ impl Digest {
 
 impl Blocks {
     fn input<F>(&mut self, mut input: &[u8], mut f: F)
-        where F: FnMut(&[u8])
+        where F: FnMut(&[u8; 64])
     {
         if self.len > 0 {
             let len = self.len as usize;
@@ -154,7 +164,7 @@ impl Blocks {
         assert_eq!(self.len, 0);
         for chunk in input.chunks(64) {
             if chunk.len() == 64 {
-                f(chunk)
+                f(as_block(chunk))
             } else {
                 self.block[..chunk.len()].clone_from_slice(chunk);
                 self.len = chunk.len() as u32;
@@ -164,11 +174,14 @@ impl Blocks {
 }
 
 impl Sha1State {
-    fn process(&mut self, block: &[u8]) {
+    fn process(&mut self, block: &[u8; 64]) {
         let mut words = [0u32; 80];
-        for (i, chunk) in block.chunks(4).enumerate() {
-            words[i] = (chunk[3] as u32) | ((chunk[2] as u32) << 8) | ((chunk[1] as u32) << 16) |
-                       ((chunk[0] as u32) << 24);
+
+        for i in 0..16 {
+            let off = i * 4;
+            words[i] = (block[off + 3] as u32) | ((block[off + 2] as u32) << 8) |
+                       ((block[off + 1] as u32) << 16) |
+                       ((block[off] as u32) << 24);
         }
 
         fn ff(b: u32, c: u32, d: u32) -> u32 {
