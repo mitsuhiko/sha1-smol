@@ -45,9 +45,8 @@ pub struct Digest {
     data: Sha1State,
 }
 
-const DEFAULT_STATE: Sha1State = Sha1State {
-    state: [0x67452301, 0xefcdab89, 0x98badcfe, 0x10325476, 0xc3d2e1f0],
-};
+const DEFAULT_STATE: Sha1State =
+    Sha1State { state: [0x67452301, 0xefcdab89, 0x98badcfe, 0x10325476, 0xc3d2e1f0] };
 
 impl Sha1 {
     /// Creates an fresh sha1 hash object.
@@ -83,16 +82,14 @@ impl Sha1 {
     pub fn digest(&self) -> Digest {
         let mut state = self.state;
         let bits = (self.len + (self.blocks.len as u64)) * 8;
-        let extra = [
-            (bits >> 56) as u8,
-            (bits >> 48) as u8,
-            (bits >> 40) as u8,
-            (bits >> 32) as u8,
-            (bits >> 24) as u8,
-            (bits >> 16) as u8,
-            (bits >>  8) as u8,
-            (bits >>  0) as u8,
-        ];
+        let extra = [(bits >> 56) as u8,
+                     (bits >> 48) as u8,
+                     (bits >> 40) as u8,
+                     (bits >> 32) as u8,
+                     (bits >> 24) as u8,
+                     (bits >> 16) as u8,
+                     (bits >> 8) as u8,
+                     (bits >> 0) as u8];
         let mut last = [0; 128];
         let blocklen = self.blocks.len as usize;
         last[..blocklen].clone_from_slice(&self.blocks.block[..blocklen]);
@@ -114,33 +111,33 @@ impl Sha1 {
 impl Digest {
     /// Returns the 160 bit (20 byte) digest as a byte array.
     pub fn bytes(&self) -> [u8; 20] {
-        [
-            (self.data.state[0] >> 24) as u8,
-            (self.data.state[0] >> 16) as u8,
-            (self.data.state[0] >>  8) as u8,
-            (self.data.state[0] >>  0) as u8,
-            (self.data.state[1] >> 24) as u8,
-            (self.data.state[1] >> 16) as u8,
-            (self.data.state[1] >>  8) as u8,
-            (self.data.state[1] >>  0) as u8,
-            (self.data.state[2] >> 24) as u8,
-            (self.data.state[2] >> 16) as u8,
-            (self.data.state[2] >>  8) as u8,
-            (self.data.state[2] >>  0) as u8,
-            (self.data.state[3] >> 24) as u8,
-            (self.data.state[3] >> 16) as u8,
-            (self.data.state[3] >>  8) as u8,
-            (self.data.state[3] >>  0) as u8,
-            (self.data.state[4] >> 24) as u8,
-            (self.data.state[4] >> 16) as u8,
-            (self.data.state[4] >>  8) as u8,
-            (self.data.state[4] >>  0) as u8,
-        ]
+        [(self.data.state[0] >> 24) as u8,
+         (self.data.state[0] >> 16) as u8,
+         (self.data.state[0] >> 8) as u8,
+         (self.data.state[0] >> 0) as u8,
+         (self.data.state[1] >> 24) as u8,
+         (self.data.state[1] >> 16) as u8,
+         (self.data.state[1] >> 8) as u8,
+         (self.data.state[1] >> 0) as u8,
+         (self.data.state[2] >> 24) as u8,
+         (self.data.state[2] >> 16) as u8,
+         (self.data.state[2] >> 8) as u8,
+         (self.data.state[2] >> 0) as u8,
+         (self.data.state[3] >> 24) as u8,
+         (self.data.state[3] >> 16) as u8,
+         (self.data.state[3] >> 8) as u8,
+         (self.data.state[3] >> 0) as u8,
+         (self.data.state[4] >> 24) as u8,
+         (self.data.state[4] >> 16) as u8,
+         (self.data.state[4] >> 8) as u8,
+         (self.data.state[4] >> 0) as u8]
     }
 }
 
 impl Blocks {
-    fn input<F>(&mut self, mut input: &[u8], mut f: F) where F: FnMut(&[u8]) {
+    fn input<F>(&mut self, mut input: &[u8], mut f: F)
+        where F: FnMut(&[u8])
+    {
         if self.len > 0 {
             let len = self.len as usize;
             let amt = cmp::min(input.len(), self.block.len() - len);
@@ -151,7 +148,7 @@ impl Blocks {
                 input = &input[amt..];
             } else {
                 self.len += amt as u32;
-                return
+                return;
             }
         }
         assert_eq!(self.len, 0);
@@ -170,16 +167,22 @@ impl Sha1State {
     fn process(&mut self, block: &[u8]) {
         let mut words = [0u32; 80];
         for (i, chunk) in block.chunks(4).enumerate() {
-            words[i] = (chunk[3] as u32) |
-                       ((chunk[2] as u32) << 8) |
-                       ((chunk[1] as u32) << 16) |
+            words[i] = (chunk[3] as u32) | ((chunk[2] as u32) << 8) | ((chunk[1] as u32) << 16) |
                        ((chunk[0] as u32) << 24);
         }
 
-        fn ff(b: u32, c: u32, d: u32) -> u32 { d ^ (b & (c ^ d)) }
-        fn gg(b: u32, c: u32, d: u32) -> u32 { b ^ c ^ d }
-        fn hh(b: u32, c: u32, d: u32) -> u32 { (b & c) | (d & (b | c)) }
-        fn ii(b: u32, c: u32, d: u32) -> u32 { b ^ c ^ d }
+        fn ff(b: u32, c: u32, d: u32) -> u32 {
+            d ^ (b & (c ^ d))
+        }
+        fn gg(b: u32, c: u32, d: u32) -> u32 {
+            b ^ c ^ d
+        }
+        fn hh(b: u32, c: u32, d: u32) -> u32 {
+            (b & c) | (d & (b | c))
+        }
+        fn ii(b: u32, c: u32, d: u32) -> u32 {
+            b ^ c ^ d
+        }
 
         for i in 16..80 {
             let n = words[i - 3] ^ words[i - 8] ^ words[i - 14] ^ words[i - 16];
@@ -194,18 +197,18 @@ impl Sha1State {
 
         for i in 0..80 {
             let (f, k) = match i {
-                0 ... 19 => (ff(b, c, d), 0x5a827999),
-                20 ... 39 => (gg(b, c, d), 0x6ed9eba1),
-                40 ... 59 => (hh(b, c, d), 0x8f1bbcdc),
-                60 ... 79 => (ii(b, c, d), 0xca62c1d6),
+                0...19 => (ff(b, c, d), 0x5a827999),
+                20...39 => (gg(b, c, d), 0x6ed9eba1),
+                40...59 => (hh(b, c, d), 0x8f1bbcdc),
+                60...79 => (ii(b, c, d), 0xca62c1d6),
                 _ => (0, 0),
             };
 
             let tmp = a.rotate_left(5)
-                       .wrapping_add(f)
-                       .wrapping_add(e)
-                       .wrapping_add(k)
-                       .wrapping_add(words[i]);
+                .wrapping_add(f)
+                .wrapping_add(e)
+                .wrapping_add(k)
+                .wrapping_add(words[i]);
             e = d;
             d = c;
             c = b.rotate_left(30);
@@ -236,6 +239,7 @@ impl fmt::Display for Digest {
     }
 }
 
+#[cfg_attr(rustfmt, rustfmt_skip)]
 #[cfg(test)]
 mod tests {
     extern crate std;
