@@ -20,6 +20,9 @@ use core::cmp;
 use core::fmt;
 use core::mem;
 
+/// The length of a SHA1 digest in bytes
+pub const DIGEST_LENGTH: usize = 20;
+
 /// Represents a Sha1 hash object in memory.
 #[derive(Clone)]
 pub struct Sha1 {
@@ -120,7 +123,7 @@ impl Sha1 {
 
 impl Digest {
     /// Returns the 160 bit (20 byte) digest as a byte array.
-    pub fn bytes(&self) -> [u8; 20] {
+    pub fn bytes(&self) -> [u8; DIGEST_LENGTH] {
         [(self.data.state[0] >> 24) as u8,
          (self.data.state[0] >> 16) as u8,
          (self.data.state[0] >> 8) as u8,
