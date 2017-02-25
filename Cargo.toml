@@ -8,5 +8,5 @@ license = "BSD-3-Clause"
 repository = "https://github.com/mitsuhiko/rust-sha1"
 
 [dev-dependencies]
-openssl = "0.7"
+openssl = "0.9"
 rand = "0.3"

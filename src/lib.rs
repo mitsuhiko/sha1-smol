@@ -336,8 +336,8 @@ mod tests {
         let mut bytes = [0; 512];
 
         for _ in 0..20 {
-            let ty = openssl::crypto::hash::Type::SHA1;
-            let mut r = openssl::crypto::hash::Hasher::new(ty);
+            let ty = openssl::hash::MessageDigest::sha1();
+            let mut r = openssl::hash::Hasher::new(ty).unwrap();
             m.reset();
             for _ in 0..50 {
                 let len = rng.gen::<usize>() % bytes.len();
@@ -345,7 +345,7 @@ mod tests {
                 m.update(&bytes[..len]);
                 r.write(&bytes[..len]).unwrap();
             }
-            assert_eq!(r.finish(), m.digest().bytes());
+            assert_eq!(r.finish().unwrap(), m.digest().bytes());
         }
     }
 }
