@@ -15,5 +15,3 @@ docs: build
 
 upload-docs: docs
 	@./upload-docs.sh
-
-.PHONY: build test docs upload-docs
