@@ -211,25 +211,27 @@ impl Sha1State {
         let mut d = self.state[3];
         let mut e = self.state[4];
 
-        for i in 0..80 {
-            let (f, k) = match i {
-                0...19 => (ff(b, c, d), 0x5a827999),
-                20...39 => (gg(b, c, d), 0x6ed9eba1),
-                40...59 => (hh(b, c, d), 0x8f1bbcdc),
-                60...79 => (ii(b, c, d), 0xca62c1d6),
-                _ => (0, 0),
-            };
-
-            let tmp = a.rotate_left(5)
-                .wrapping_add(f)
-                .wrapping_add(e)
-                .wrapping_add(k)
-                .wrapping_add(words[i]);
-            e = d;
-            d = c;
-            c = b.rotate_left(30);
-            b = a;
-            a = tmp;
+        for i in 0..4 {
+            for j in 0..20 {
+                let (f, k) = match i {
+                    0 => (ff(b, c, d), 0x5a827999),
+                    1 => (gg(b, c, d), 0x6ed9eba1),
+                    2 => (hh(b, c, d), 0x8f1bbcdc),
+                    3 => (ii(b, c, d), 0xca62c1d6),
+                    _ => unreachable!(),
+                };
+                   
+                let tmp = a.rotate_left(5)
+                    .wrapping_add(f)
+                    .wrapping_add(e)
+                    .wrapping_add(k)
+                    .wrapping_add(words[i*20+j]);
+                e = d;
+                d = c;
+                c = b.rotate_left(30);
+                b = a;
+                a = tmp;
+            }
         }
 
         self.state[0] = self.state[0].wrapping_add(a);
