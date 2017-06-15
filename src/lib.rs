@@ -263,7 +263,6 @@ mod tests {
     extern crate openssl;
 
     use self::std::prelude::v1::*;
-    use self::std::io::Write;
 
     use Sha1;
 
@@ -339,16 +338,16 @@ mod tests {
         let mut bytes = [0; 512];
 
         for _ in 0..20 {
-            let ty = openssl::crypto::hash::Type::SHA1;
-            let mut r = openssl::crypto::hash::Hasher::new(ty);
+            let ty = openssl::hash::MessageDigest::sha1();
+            let mut r = openssl::hash::Hasher::new(ty).unwrap();
             m.reset();
             for _ in 0..50 {
                 let len = rng.gen::<usize>() % bytes.len();
                 rng.fill_bytes(&mut bytes[..len]);
                 m.update(&bytes[..len]);
-                r.write(&bytes[..len]).unwrap();
+                r.update(&bytes[..len]).unwrap();
             }
-            assert_eq!(r.finish(), m.digest().bytes());
+            assert_eq!(r.finish2().unwrap().as_ref(), &m.digest().bytes());
         }
     }
 }
