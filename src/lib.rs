@@ -219,11 +219,6 @@ fn sha1msg2(a: u32x4, b: u32x4) -> u32x4 {
     u32x4(w16, w17, w18, w19)
 }
 
-/// Performs 4 rounds of the message schedule update.
-fn sha1_schedule_x4(v0: u32x4, v1: u32x4, v2: u32x4, v3: u32x4) -> u32x4 {
-    sha1msg2(sha1msg1(v0, v1) ^ v2, v3)
-}
-
 /// Emulates `llvm.x86.sha1nexte` intrinsic.
 #[inline]
 fn sha1_first_half(abcd: u32x4, msg: u32x4) -> u32x4 {
