@@ -39,7 +39,7 @@ struct Blocks {
     block: [u8; 64],
 }
 
-#[derive(Copy, Clone)]
+#[derive(Copy, Clone, PartialOrd, Ord, PartialEq, Eq, Hash)]
 struct Sha1State {
     state: [u32; 5],
 }
@@ -48,6 +48,7 @@ struct Sha1State {
 ///
 /// A digest can be formatted to view the digest as a hex string, or the bytes
 /// can be extracted for later processing.
+#[derive(PartialOrd, Ord, PartialEq, Eq, Hash, Clone, Copy)]
 pub struct Digest {
     data: Sha1State,
 }
