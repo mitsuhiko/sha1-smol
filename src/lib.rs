@@ -433,6 +433,12 @@ impl fmt::Display for Digest {
     }
 }
 
+impl fmt::Debug for Digest {
+    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+        write!(f, "Digest {{ \"{}\" }}", self)
+    }
+}
+
 #[cfg_attr(rustfmt, rustfmt_skip)]
 #[cfg(test)]
 mod tests {
