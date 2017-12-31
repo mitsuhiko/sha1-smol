@@ -9,4 +9,4 @@ repository = "https://github.com/mitsuhiko/rust-sha1"
 
 [dev-dependencies]
 openssl = "0.9"
-rand = "0.3"
+rand = "0.4"
