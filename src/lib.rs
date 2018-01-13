@@ -526,7 +526,7 @@ mod tests {
                 m.update(&bytes[..len]);
                 r.update(&bytes[..len]).unwrap();
             }
-            assert_eq!(r.finish2().unwrap().as_ref(), &m.digest().bytes());
+            assert_eq!(r.finish().unwrap().as_ref(), &m.digest().bytes());
         }
     }
 }
