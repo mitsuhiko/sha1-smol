@@ -18,7 +18,8 @@
 
 #[cfg(feature="serde")]
 extern crate serde;
-#[cfg(feature="serde")]
+
+#[cfg(feature="std")]
 extern crate std;
 
 use core::cmp;
@@ -479,8 +480,23 @@ impl serde::ser::Serialize for Digest {
     where
         S: serde::ser::Serializer,
     {
-        use self::std::prelude::v1::*;
-        serializer.serialize_str(&self.to_string())
+        fn to_hex(num: u8) -> u8 {
+            b"0123456789abcdef"[num as usize]
+        }
+
+        let mut hex_str = [0u8; 40];
+        let mut c = 0;
+        for state in self.data.state.iter() {
+            for off in 0..4 {
+                let byte = (state >> (8 * (3 - off))) as u8;
+                hex_str[c] = to_hex(byte >> 4);
+                hex_str[c + 1] = to_hex(byte & 0xf);
+                c += 2;
+            }
+        }
+        serializer.serialize_str(unsafe {
+            str::from_utf8_unchecked(&hex_str[..])
+        })
     }
 }
 
@@ -495,7 +511,7 @@ impl<'de> serde::de::Deserialize<'de> for Digest {
         impl<'de> serde::de::Visitor<'de> for V {
             type Value = Digest;
 
-            fn expecting(&self, formatter: &mut ::std::fmt::Formatter) -> fmt::Result {
+            fn expecting(&self, formatter: &mut fmt::Formatter) -> fmt::Result {
                 formatter.write_str("SHA-1 hash")
             }
 
@@ -523,7 +539,7 @@ mod tests {
 
     use self::std::prelude::v1::*;
 
-    use {Sha1, Digest};
+    use Sha1;
 
     #[test]
     fn test_simple() {
@@ -611,7 +627,9 @@ mod tests {
     }
 
     #[test]
+    #[cfg(feature="std")]
     fn test_parse() {
+        use Digest;
         use std::error::Error;
         let y: Digest = "2ef7bde608ce5404e97d5f042f95f89f1c232871".parse().unwrap();
         assert_eq!(y.to_string(), "2ef7bde608ce5404e97d5f042f95f89f1c232871");
