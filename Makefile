@@ -8,6 +8,8 @@ watch-docs:
 	@cargo watch build "doc --no-deps"
 
 test:
+	@cargo test --features=serde
+	@cargo test --features=std
 	@cargo test
 
 docs: build

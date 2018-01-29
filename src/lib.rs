@@ -16,9 +16,16 @@
 #![no_std]
 #![deny(missing_docs)]
 
+#[cfg(feature="serde")]
+extern crate serde;
+
+#[cfg(feature="std")]
+extern crate std;
+
 use core::cmp;
 use core::fmt;
 use core::mem;
+use core::str;
 
 mod simd;
 use simd::*;
@@ -39,7 +46,7 @@ struct Blocks {
     block: [u8; 64],
 }
 
-#[derive(Copy, Clone, PartialOrd, Ord, PartialEq, Eq, Hash)]
+#[derive(Copy, Clone, PartialOrd, Ord, PartialEq, Eq, Hash, Default)]
 struct Sha1State {
     state: [u32; 5],
 }
@@ -48,7 +55,7 @@ struct Sha1State {
 ///
 /// A digest can be formatted to view the digest as a hex string, or the bytes
 /// can be extracted for later processing.
-#[derive(PartialOrd, Ord, PartialEq, Eq, Hash, Clone, Copy)]
+#[derive(PartialOrd, Ord, PartialEq, Eq, Hash, Clone, Copy, Default)]
 pub struct Digest {
     data: Sha1State,
 }
@@ -419,6 +426,39 @@ impl Clone for Blocks {
     }
 }
 
+/// Indicates that a digest couldn't be parsed.
+#[derive(Copy, Clone, Hash, Eq, PartialEq, Ord, PartialOrd, Debug)]
+pub struct DigestParseError(());
+
+impl fmt::Display for DigestParseError {
+    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+        write!(f, "not a valid sha1 hash")
+    }
+}
+
+#[cfg(feature="std")]
+impl std::error::Error for DigestParseError {
+    fn description(&self) -> &str {
+        "not a valid sha1 hash"
+    }
+}
+
+impl str::FromStr for Digest {
+    type Err = DigestParseError;
+
+    fn from_str(s: &str) -> Result<Digest, DigestParseError> {
+        if s.len() != 40 {
+            return Err(DigestParseError(()));
+        }
+        let mut rv: Digest = Default::default();
+        for idx in 0..5 {
+            rv.data.state[idx] = try!(u32::from_str_radix(&s[idx * 8..idx * 8 + 8], 16)
+                .map_err(|_| DigestParseError(())));
+        }
+        Ok(rv)
+    }
+}
+
 impl fmt::Display for Digest {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
         for i in self.data.state.iter() {
@@ -431,6 +471,62 @@ impl fmt::Display for Digest {
 impl fmt::Debug for Digest {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
         write!(f, "Digest {{ \"{}\" }}", self)
+    }
+}
+
+#[cfg(feature="serde")]
+impl serde::ser::Serialize for Digest {
+    fn serialize<S>(&self, serializer: S) -> Result<S::Ok, S::Error>
+    where
+        S: serde::ser::Serializer,
+    {
+        fn to_hex(num: u8) -> u8 {
+            b"0123456789abcdef"[num as usize]
+        }
+
+        let mut hex_str = [0u8; 40];
+        let mut c = 0;
+        for state in self.data.state.iter() {
+            for off in 0..4 {
+                let byte = (state >> (8 * (3 - off))) as u8;
+                hex_str[c] = to_hex(byte >> 4);
+                hex_str[c + 1] = to_hex(byte & 0xf);
+                c += 2;
+            }
+        }
+        serializer.serialize_str(unsafe {
+            str::from_utf8_unchecked(&hex_str[..])
+        })
+    }
+}
+
+#[cfg(feature="serde")]
+impl<'de> serde::de::Deserialize<'de> for Digest {
+    fn deserialize<D>(deserializer: D) -> Result<Self, D::Error>
+    where
+        D: serde::de::Deserializer<'de>,
+    {
+        struct V;
+
+        impl<'de> serde::de::Visitor<'de> for V {
+            type Value = Digest;
+
+            fn expecting(&self, formatter: &mut fmt::Formatter) -> fmt::Result {
+                formatter.write_str("SHA-1 hash")
+            }
+
+            fn visit_str<E>(self, value: &str) -> Result<Digest, E>
+            where
+                E: serde::de::Error,
+            {
+                value
+                    .parse()
+                    .map_err(|_| serde::de::Error::invalid_value(
+                        serde::de::Unexpected::Str(value), &self))
+            }
+        }
+
+        deserializer.deserialize_str(V)
     }
 }
 
@@ -528,5 +624,43 @@ mod tests {
             }
             assert_eq!(r.finish2().unwrap().as_ref(), &m.digest().bytes());
         }
+    }
+
+    #[test]
+    #[cfg(feature="std")]
+    fn test_parse() {
+        use Digest;
+        use std::error::Error;
+        let y: Digest = "2ef7bde608ce5404e97d5f042f95f89f1c232871".parse().unwrap();
+        assert_eq!(y.to_string(), "2ef7bde608ce5404e97d5f042f95f89f1c232871");
+        assert!("asdfasdf".parse::<Digest>().is_err());
+        assert_eq!("asdfasdf".parse::<Digest>()
+            .map_err(|x| x.description().to_string()).unwrap_err(), "not a valid sha1 hash");
+    }
+}
+
+#[cfg_attr(rustfmt, rustfmt_skip)]
+#[cfg(all(test, feature="serde"))]
+mod serde_tests {
+    extern crate std;
+    extern crate serde_json;
+
+    use self::std::prelude::v1::*;
+
+    use {Sha1, Digest};
+
+    #[test]
+    fn test_to_json() {
+        let mut s = Sha1::new();
+        s.update(b"Hello World!");
+        let x = s.digest();
+        let y = serde_json::to_vec(&x).unwrap();
+        assert_eq!(y, &b"\"2ef7bde608ce5404e97d5f042f95f89f1c232871\""[..]);
+    }
+
+    #[test]
+    fn test_from_json() {
+        let y: Digest = serde_json::from_str("\"2ef7bde608ce5404e97d5f042f95f89f1c232871\"").unwrap();
+        assert_eq!(y.to_string(), "2ef7bde608ce5404e97d5f042f95f89f1c232871");
     }
 }
