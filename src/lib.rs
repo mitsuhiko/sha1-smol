@@ -1,6 +1,13 @@
 //! A minimal implementation of SHA1 for rust.
 //!
-//! Example:
+//! This implementation supports no_std which is the default mode.  The
+//! following features are available and can be optionally enabled:
+//!
+//! * ``serde``: when enabled the `Digest` type can be serialized.
+//! * ``std``: when enabled errors from this library implement `std::error::Error`
+//!   and the `hexdigest` shortcut becomes available.
+//!
+//! Simple Example:
 //!
 //! ```rust
 //! extern crate sha1;
@@ -9,6 +16,17 @@
 //! let mut m = sha1::Sha1::new();
 //! m.update(b"Hello World!");
 //! assert_eq!(m.digest().to_string(),
+//!            "2ef7bde608ce5404e97d5f042f95f89f1c232871");
+//! # }
+//! ```
+//!
+//! The sha1 object can be updated multiple times.  If you only need to use
+//! it once you can also use shortcuts:
+//!
+//! ```
+//! extern crate sha1;
+//! # fn main() {
+//! assert_eq!(sha1::Sha1::from("Hello World!").hexdigest(),
 //!            "2ef7bde608ce5404e97d5f042f95f89f1c232871");
 //! # }
 //! ```
@@ -56,6 +74,12 @@ struct Sha1State {
 ///
 /// A digest can be formatted to view the digest as a hex string, or the bytes
 /// can be extracted for later processing.
+///
+/// To retrieve a hex string result call `to_string` on it (requires that std
+/// is available).
+///
+/// If the `serde` feature is enabled a digest can also be serialized and
+/// deserialized.  Likewise a digest can be parsed from a hex string.
 #[derive(PartialOrd, Ord, PartialEq, Eq, Hash, Clone, Copy, Default)]
 pub struct Digest {
     data: Sha1State,
@@ -81,6 +105,8 @@ impl Default for Sha1 {
 
 impl Sha1 {
     /// Creates an fresh sha1 hash object.
+    ///
+    /// This is equivalent to creating a hash with `Default::default`.
     pub fn new() -> Sha1 {
         Sha1 {
             state: DEFAULT_STATE,
@@ -90,6 +116,16 @@ impl Sha1 {
                 block: [0; 64],
             },
         }
+    }
+
+    /// Shortcut to create a sha1 from some bytes.
+    ///
+    /// This also lets you create a hash from a utf-8 string.  This is equivalent
+    /// to making a new Sha1 object and calling `update` on it once.
+    pub fn from<D: AsRef<[u8]>>(data: D) -> Sha1 {
+        let mut rv = Sha1::new();
+        rv.update(data.as_ref());
+        rv
     }
 
     /// Resets the hash object to it's initial state.
@@ -136,6 +172,15 @@ impl Sha1 {
         }
 
         Digest { data: state }
+    }
+
+    /// Retrieve the digest result as hex string directly.
+    ///
+    /// (The function is only available if the `std` feature is enabled)
+    #[cfg(feature="std")]
+    pub fn hexdigest(&self) -> std::string::String {
+        use std::string::ToString;
+        self.digest().to_string()
     }
 }
 
@@ -603,6 +648,20 @@ mod tests {
 
             assert_eq!(hh.len(), h.len());
             assert_eq!(hh, *h);
+        }
+    }
+
+    #[test]
+    fn test_shortcuts() {
+        let s = Sha1::from("The quick brown fox jumps over the lazy dog");
+        assert_eq!(s.digest().to_string(), "2fd4e1c67a2d28fced849ee1bb76e7391b93eb12");
+
+        let s = Sha1::from(&b"The quick brown fox jumps over the lazy dog"[..]);
+        assert_eq!(s.digest().to_string(), "2fd4e1c67a2d28fced849ee1bb76e7391b93eb12");
+
+        #[cfg(feature="std")] {
+            let s = Sha1::from("The quick brown fox jumps over the lazy dog");
+            assert_eq!(s.hexdigest(), "2fd4e1c67a2d28fced849ee1bb76e7391b93eb12");
         }
     }
 
