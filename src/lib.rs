@@ -25,6 +25,7 @@ extern crate std;
 use core::cmp;
 use core::fmt;
 use core::mem;
+use core::hash;
 use core::str;
 
 mod simd;
@@ -34,7 +35,7 @@ use simd::*;
 pub const DIGEST_LENGTH: usize = 20;
 
 /// Represents a Sha1 hash object in memory.
-#[derive(Clone)]
+#[derive(Clone, PartialOrd, Ord, PartialEq, Eq, Hash)]
 pub struct Sha1 {
     state: Sha1State,
     blocks: Blocks,
@@ -69,6 +70,12 @@ fn as_block(input: &[u8]) -> &[u8; 64] {
         assert!(input.len() == 64);
         let arr: &[u8; 64] = mem::transmute(input.as_ptr());
         arr
+    }
+}
+
+impl Default for Sha1 {
+    fn default() -> Sha1 {
+        Sha1::new()
     }
 }
 
@@ -417,6 +424,33 @@ impl Sha1State {
         self.state[2] = self.state[2].wrapping_add(c);
         self.state[3] = self.state[3].wrapping_add(d);
         self.state[4] = self.state[4].wrapping_add(e);
+    }
+}
+
+impl PartialEq for Blocks {
+    fn eq(&self, other: &Blocks) -> bool {
+        (self.len, &self.block[..]).eq(&(other.len, &other.block[..]))
+    }
+}
+
+impl Ord for Blocks {
+    fn cmp(&self, other: &Blocks) -> cmp::Ordering {
+        (self.len, &self.block[..]).cmp(&(other.len, &other.block[..]))
+    }
+}
+
+impl PartialOrd for Blocks {
+    fn partial_cmp(&self, other: &Blocks) -> Option<cmp::Ordering> {
+        Some(self.cmp(other))
+    }
+}
+
+impl Eq for Blocks {}
+
+impl hash::Hash for Blocks {
+    fn hash<H: hash::Hasher>(&self, state: &mut H) {
+        self.len.hash(state);
+        self.block.hash(state);
     }
 }
 
