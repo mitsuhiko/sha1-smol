@@ -1,0 +1,12 @@
+[package]
+name = "bench"
+version = "0.1.0"
+authors = ["Armin Ronacher <armin.ronacher@active-4.com>"]
+
+[dependencies]
+sha1 = { path = ".." }
+ring = "*"
+
+[[bin]]
+name = "bench"
+path = "bench.rs"
