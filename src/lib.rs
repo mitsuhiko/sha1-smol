@@ -103,6 +103,16 @@ impl Default for Sha1 {
     }
 }
 
+#[cfg(feature="std")]
+impl std::io::Write for Sha1 {
+    fn write(&mut self, buf: &[u8]) -> std::io::Result<usize> {
+        self.update(buf);
+        Ok(buf.len())
+    }
+
+    fn flush(&mut self) -> std::io::Result<()> { Ok(()) }
+}
+
 impl Sha1 {
     /// Creates an fresh sha1 hash object.
     ///
@@ -729,6 +739,16 @@ mod tests {
         assert!("asdfasdf".parse::<Digest>().is_err());
         assert_eq!("asdfasdf".parse::<Digest>()
             .map_err(|x| x.description().to_string()).unwrap_err(), "not a valid sha1 hash");
+    }
+
+    #[test]
+    #[cfg(feature="std")]
+    fn test_write() {
+        let mut data: &[u8] = &[b'x'; 65535];
+        let mut writer = Sha1::new();
+        std::io::copy(&mut data, &mut writer).unwrap();
+        assert_eq!(writer.digest().to_string(),
+                   "61fd9f5ce720067d6801bb97049da9fdb4837531");
     }
 }
 
