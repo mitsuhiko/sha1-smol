@@ -6,6 +6,8 @@ authors = ["Armin Ronacher <armin.ronacher@active-4.com>"]
 [dependencies]
 sha1 = { path = ".." }
 ring = "*"
+openssl = "*"
+rust-crypto = "*"
 
 [[bin]]
 name = "bench"
