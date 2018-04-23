@@ -1,11 +1,15 @@
 extern crate sha1;
 extern crate ring;
+extern crate openssl;
+extern crate crypto;
 
 use std::env;
 use std::fs;
 use std::io::{Read, Write};
 use std::time::{Instant, Duration};
 use std::process::{Command, Stdio};
+
+use crypto::digest::Digest;
 
 fn time<F, FMT>(desc: &str, f: F, fmt: FMT)
     where F: Fn(),
@@ -15,6 +19,11 @@ fn time<F, FMT>(desc: &str, f: F, fmt: FMT)
     f();
     let duration = Instant::now() - start;
     println!("{}: {}", desc, fmt(duration));
+}
+
+fn to_hex(bytes : &[u8]) -> String {
+    let hex_bytes : Vec<String> = bytes.iter().map(|b| format!("{:02x}", b)).collect();
+    hex_bytes.join("")
 }
 
 fn main() {
@@ -55,14 +64,29 @@ fn main() {
          || {
              let mut sha1 = sha1::Sha1::new();
              sha1.update(&out);
-             println!("{}", sha1.digest());
+             println!("sha1: {}", sha1.digest());
          },
          &throughput);
 
     time("ring crate",
          || {
              let digest = ring::digest::digest(&ring::digest::SHA1, &out);
-             println!("{:?}", digest);
+             println!("ring: {:?}", digest);
+         },
+         &throughput);
+
+    time("openssl crate", || {
+             let digest = openssl::sha::sha1(&out);
+             println!("openssl: {}", to_hex(&digest));
+         },
+         &throughput);
+
+    time("crypto crate",
+         || {
+             let mut hasher = crypto::sha1::Sha1::new();
+             hasher.input(&out);
+             let digest = hasher.result_str();
+             println!("crypto: {}", digest);
          },
          &throughput);
 }
