@@ -26,6 +26,7 @@
 //! ```
 //! extern crate sha1;
 //! # fn main() {
+//! #[cfg(feature="std")]
 //! assert_eq!(sha1::Sha1::from("Hello World!").hexdigest(),
 //!            "2ef7bde608ce5404e97d5f042f95f89f1c232871");
 //! # }
