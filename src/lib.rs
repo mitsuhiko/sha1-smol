@@ -10,7 +10,6 @@
 //! ## Example
 //!
 //! ```rust
-//! # extern crate sha1_smol;
 //! # fn main() {
 //!
 //! let mut m = sha1_smol::Sha1::new();
@@ -24,7 +23,6 @@
 //! it once you can also use shortcuts (requires std):
 //!
 //! ```
-//! # extern crate sha1_smol;
 //! # trait X { fn hexdigest(&self) -> &'static str { "2ef7bde608ce5404e97d5f042f95f89f1c232871" }}
 //! # impl X for sha1_smol::Sha1 {}
 //! # fn main() {
@@ -39,19 +37,16 @@
 #![allow(clippy::double_parens)]
 #![allow(clippy::identity_op)]
 
-#[cfg(feature = "serde")]
-extern crate serde;
-
-#[cfg(feature = "std")]
-extern crate std;
-
 use core::cmp;
 use core::fmt;
 use core::hash;
 use core::str;
 
 mod simd;
-use simd::*;
+use crate::simd::*;
+
+#[cfg(feature = "std")]
+extern crate std;
 
 /// The length of a SHA1 digest in bytes
 pub const DIGEST_LENGTH: usize = 20;
@@ -570,7 +565,7 @@ impl str::FromStr for Digest {
         let mut rv: Digest = Default::default();
         for idx in 0..5 {
             rv.data.state[idx] =
-                try!(u32::from_str_radix(&s[idx * 8..idx * 8 + 8], 16)
+                r#try!(u32::from_str_radix(&s[idx * 8..idx * 8 + 8], 16)
                     .map_err(|_| DigestParseError(())));
         }
         Ok(rv)
@@ -580,7 +575,7 @@ impl str::FromStr for Digest {
 impl fmt::Display for Digest {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
         for i in self.data.state.iter() {
-            try!(write!(f, "{:08x}", i));
+            r#try!(write!(f, "{:08x}", i));
         }
         Ok(())
     }
@@ -654,7 +649,7 @@ mod tests {
 
     use self::std::prelude::v1::*;
 
-    use Sha1;
+    use crate::Sha1;
 
     #[test]
     fn test_simple() {
@@ -758,7 +753,7 @@ mod tests {
     #[test]
     #[cfg(feature="std")]
     fn test_parse() {
-        use Digest;
+        use crate::Digest;
         use std::error::Error;
         let y: Digest = "2ef7bde608ce5404e97d5f042f95f89f1c232871".parse().unwrap();
         assert_eq!(y.to_string(), "2ef7bde608ce5404e97d5f042f95f89f1c232871");
@@ -776,7 +771,7 @@ mod serde_tests {
 
     use self::std::prelude::v1::*;
 
-    use {Sha1, Digest};
+    use crate::{Sha1, Digest};
 
     #[test]
     fn test_to_json() {

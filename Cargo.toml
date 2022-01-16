@@ -6,6 +6,7 @@ keywords = ["sha1"]
 description = "Minimal dependency free implementation of SHA1 for Rust."
 license = "BSD-3-Clause"
 repository = "https://github.com/mitsuhiko/sha1-smol"
+edition = "2018"
 
 [features]
 std = []
