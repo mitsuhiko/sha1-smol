@@ -15,4 +15,4 @@ jobs:
           components: clippy, rustfmt
           override: true
       - name: Run rustfmt
-        run: make format-check
+        run: cargo fmt --check
