@@ -29,4 +29,4 @@ This is largely based on the hash code in crypto-rs by Koka El Kiwi.
 
 - [Documentation](https://docs.rs/sha1-smol/)
 - [Issue Tracker](https://github.com/mitsuhiko/sha1-smol/issues)
-- License: [3 Clause BDS](https://github.com/mitsuhiko/sha1-smol/blob/master/LICENSE)
+- License: [3 Clause BSD](https://github.com/mitsuhiko/sha1-smol/blob/master/LICENSE)
