@@ -10,13 +10,10 @@
 //! ## Example
 //!
 //! ```rust
-//! # fn main() {
-//!
 //! let mut m = sha1_smol::Sha1::new();
 //! m.update(b"Hello World!");
 //! assert_eq!(m.digest().to_string(),
 //!            "2ef7bde608ce5404e97d5f042f95f89f1c232871");
-//! # }
 //! ```
 //!
 //! The sha1 object can be updated multiple times.  If you only need to use
