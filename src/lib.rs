@@ -36,6 +36,8 @@
 #![no_std]
 #![deny(missing_docs)]
 #![allow(deprecated)]
+#![allow(clippy::double_parens)]
+#![allow(clippy::identity_op)]
 
 #[cfg(feature = "serde")]
 extern crate serde;
@@ -46,7 +48,6 @@ extern crate std;
 use core::cmp;
 use core::fmt;
 use core::hash;
-use core::mem;
 use core::str;
 
 mod simd;
@@ -96,7 +97,7 @@ const DEFAULT_STATE: Sha1State = Sha1State {
 fn as_block(input: &[u8]) -> &[u8; 64] {
     unsafe {
         assert!(input.len() == 64);
-        let arr: &[u8; 64] = mem::transmute(input.as_ptr());
+        let arr: &[u8; 64] = &*(input.as_ptr() as *const [u8; 64]);
         arr
     }
 }
@@ -430,9 +431,9 @@ fn sha1rnds4m(abcd: u32x4, msg: u32x4) -> u32x4 {
 impl Sha1State {
     fn process(&mut self, block: &[u8; 64]) {
         let mut words = [0u32; 16];
-        for i in 0..16 {
+        for (i, word) in words.iter_mut().enumerate() {
             let off = i * 4;
-            words[i] = (block[off + 3] as u32)
+            *word = (block[off + 3] as u32)
                 | ((block[off + 2] as u32) << 8)
                 | ((block[off + 1] as u32) << 16)
                 | ((block[off] as u32) << 24);
@@ -644,7 +645,7 @@ impl<'de> serde::de::Deserialize<'de> for Digest {
     }
 }
 
-#[cfg_attr(rustfmt, rustfmt_skip)]
+#[rustfmt::skip]
 #[cfg(test)]
 mod tests {
     extern crate std;
@@ -767,7 +768,7 @@ mod tests {
     }
 }
 
-#[cfg_attr(rustfmt, rustfmt_skip)]
+#[rustfmt::skip]
 #[cfg(all(test, feature="serde"))]
 mod serde_tests {
     extern crate std;
