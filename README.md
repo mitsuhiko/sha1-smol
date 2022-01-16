@@ -3,7 +3,7 @@
 [![Build Status](https://github.com/mitsuhiko/sha1-smol/workflows/Tests/badge.svg?branch=master)](https://github.com/mitsuhiko/sha1-smol/actions?query=workflow%3ATests)
 [![Crates.io](https://img.shields.io/crates/d/sha1-smol.svg)](https://crates.io/crates/sha1-smol)
 [![License](https://img.shields.io/github/license/mitsuhiko/sha1-smol)](https://github.com/mitsuhiko/sha1-smol/blob/master/LICENSE)
-[![rustc 1.22.0](https://img.shields.io/badge/rust-1.22%2B-orange.svg)](https://img.shields.io/badge/rust-1.22%2B-orange.svg)
+[![rustc 1.30.0](https://img.shields.io/badge/rust-1.30%2B-orange.svg)](https://img.shields.io/badge/rust-1.30%2B-orange.svg)
 [![Documentation](https://docs.rs/sha1-smol/badge.svg)](https://docs.rs/sha1-smol)
 
 Minimal and dependency free implementation of SHA1 for Rust.
