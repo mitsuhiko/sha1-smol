@@ -10,10 +10,10 @@
 //! Simple Example:
 //!
 //! ```rust
-//! extern crate sha1;
+//! # extern crate sha1_smol;
 //! # fn main() {
 //!
-//! let mut m = sha1::Sha1::new();
+//! let mut m = sha1_smol::Sha1::new();
 //! m.update(b"Hello World!");
 //! assert_eq!(m.digest().to_string(),
 //!            "2ef7bde608ce5404e97d5f042f95f89f1c232871");
@@ -24,7 +24,7 @@
 //! it once you can also use shortcuts:
 //!
 //! ```
-//! extern crate sha1;
+//! # extern crate sha1_smol;
 //! # fn main() {
 //! assert_eq!(sha1::Sha1::from("Hello World!").hexdigest(),
 //!            "2ef7bde608ce5404e97d5f042f95f89f1c232871");
@@ -34,16 +34,16 @@
 #![no_std]
 #![deny(missing_docs)]
 
-#[cfg(feature="serde")]
+#[cfg(feature = "serde")]
 extern crate serde;
 
-#[cfg(feature="std")]
+#[cfg(feature = "std")]
 extern crate std;
 
 use core::cmp;
 use core::fmt;
-use core::mem;
 use core::hash;
+use core::mem;
 use core::str;
 
 mod simd;
@@ -85,8 +85,9 @@ pub struct Digest {
     data: Sha1State,
 }
 
-const DEFAULT_STATE: Sha1State =
-    Sha1State { state: [0x67452301, 0xefcdab89, 0x98badcfe, 0x10325476, 0xc3d2e1f0] };
+const DEFAULT_STATE: Sha1State = Sha1State {
+    state: [0x67452301, 0xefcdab89, 0x98badcfe, 0x10325476, 0xc3d2e1f0],
+};
 
 #[inline(always)]
 fn as_block(input: &[u8]) -> &[u8; 64] {
@@ -149,14 +150,16 @@ impl Sha1 {
     pub fn digest(&self) -> Digest {
         let mut state = self.state;
         let bits = (self.len + (self.blocks.len as u64)) * 8;
-        let extra = [(bits >> 56) as u8,
-                     (bits >> 48) as u8,
-                     (bits >> 40) as u8,
-                     (bits >> 32) as u8,
-                     (bits >> 24) as u8,
-                     (bits >> 16) as u8,
-                     (bits >> 8) as u8,
-                     (bits >> 0) as u8];
+        let extra = [
+            (bits >> 56) as u8,
+            (bits >> 48) as u8,
+            (bits >> 40) as u8,
+            (bits >> 32) as u8,
+            (bits >> 24) as u8,
+            (bits >> 16) as u8,
+            (bits >> 8) as u8,
+            (bits >> 0) as u8,
+        ];
         let mut last = [0; 128];
         let blocklen = self.blocks.len as usize;
         last[..blocklen].clone_from_slice(&self.blocks.block[..blocklen]);
@@ -177,7 +180,7 @@ impl Sha1 {
     /// Retrieve the digest result as hex string directly.
     ///
     /// (The function is only available if the `std` feature is enabled)
-    #[cfg(feature="std")]
+    #[cfg(feature = "std")]
     pub fn hexdigest(&self) -> std::string::String {
         use std::string::ToString;
         self.digest().to_string()
@@ -187,32 +190,35 @@ impl Sha1 {
 impl Digest {
     /// Returns the 160 bit (20 byte) digest as a byte array.
     pub fn bytes(&self) -> [u8; DIGEST_LENGTH] {
-        [(self.data.state[0] >> 24) as u8,
-         (self.data.state[0] >> 16) as u8,
-         (self.data.state[0] >> 8) as u8,
-         (self.data.state[0] >> 0) as u8,
-         (self.data.state[1] >> 24) as u8,
-         (self.data.state[1] >> 16) as u8,
-         (self.data.state[1] >> 8) as u8,
-         (self.data.state[1] >> 0) as u8,
-         (self.data.state[2] >> 24) as u8,
-         (self.data.state[2] >> 16) as u8,
-         (self.data.state[2] >> 8) as u8,
-         (self.data.state[2] >> 0) as u8,
-         (self.data.state[3] >> 24) as u8,
-         (self.data.state[3] >> 16) as u8,
-         (self.data.state[3] >> 8) as u8,
-         (self.data.state[3] >> 0) as u8,
-         (self.data.state[4] >> 24) as u8,
-         (self.data.state[4] >> 16) as u8,
-         (self.data.state[4] >> 8) as u8,
-         (self.data.state[4] >> 0) as u8]
+        [
+            (self.data.state[0] >> 24) as u8,
+            (self.data.state[0] >> 16) as u8,
+            (self.data.state[0] >> 8) as u8,
+            (self.data.state[0] >> 0) as u8,
+            (self.data.state[1] >> 24) as u8,
+            (self.data.state[1] >> 16) as u8,
+            (self.data.state[1] >> 8) as u8,
+            (self.data.state[1] >> 0) as u8,
+            (self.data.state[2] >> 24) as u8,
+            (self.data.state[2] >> 16) as u8,
+            (self.data.state[2] >> 8) as u8,
+            (self.data.state[2] >> 0) as u8,
+            (self.data.state[3] >> 24) as u8,
+            (self.data.state[3] >> 16) as u8,
+            (self.data.state[3] >> 8) as u8,
+            (self.data.state[3] >> 0) as u8,
+            (self.data.state[4] >> 24) as u8,
+            (self.data.state[4] >> 16) as u8,
+            (self.data.state[4] >> 8) as u8,
+            (self.data.state[4] >> 0) as u8,
+        ]
     }
 }
 
 impl Blocks {
     fn input<F>(&mut self, mut input: &[u8], mut f: F)
-        where F: FnMut(&[u8; 64])
+    where
+        F: FnMut(&[u8; 64]),
     {
         if self.len > 0 {
             let len = self.len as usize;
@@ -297,7 +303,7 @@ fn sha1_digest_round_x4(abcd: u32x4, work: u32x4, i: i8) -> u32x4 {
         1 => sha1rnds4p(abcd, work + K1V),
         2 => sha1rnds4m(abcd, work + K2V),
         3 => sha1rnds4p(abcd, work + K3V),
-        _ => panic!("unknown icosaround index")
+        _ => panic!("unknown icosaround index"),
     }
 }
 
@@ -308,19 +314,33 @@ fn sha1rnds4c(abcd: u32x4, msg: u32x4) -> u32x4 {
     let mut e = 0u32;
 
     macro_rules! bool3ary_202 {
-        ($a:expr, $b:expr, $c:expr) => (($c ^ ($a & ($b ^ $c))))
+        ($a:expr, $b:expr, $c:expr) => {
+            ($c ^ ($a & ($b ^ $c)))
+        };
     } // Choose, MD5F, SHA1C
 
-    e = e.wrapping_add(a.rotate_left(5)).wrapping_add(bool3ary_202!(b, c, d)).wrapping_add(t);
+    e = e
+        .wrapping_add(a.rotate_left(5))
+        .wrapping_add(bool3ary_202!(b, c, d))
+        .wrapping_add(t);
     b = b.rotate_left(30);
 
-    d = d.wrapping_add(e.rotate_left(5)).wrapping_add(bool3ary_202!(a, b, c)).wrapping_add(u);
+    d = d
+        .wrapping_add(e.rotate_left(5))
+        .wrapping_add(bool3ary_202!(a, b, c))
+        .wrapping_add(u);
     a = a.rotate_left(30);
 
-    c = c.wrapping_add(d.rotate_left(5)).wrapping_add(bool3ary_202!(e, a, b)).wrapping_add(v);
+    c = c
+        .wrapping_add(d.rotate_left(5))
+        .wrapping_add(bool3ary_202!(e, a, b))
+        .wrapping_add(v);
     e = e.rotate_left(30);
 
-    b = b.wrapping_add(c.rotate_left(5)).wrapping_add(bool3ary_202!(d, e, a)).wrapping_add(w);
+    b = b
+        .wrapping_add(c.rotate_left(5))
+        .wrapping_add(bool3ary_202!(d, e, a))
+        .wrapping_add(w);
     d = d.rotate_left(30);
 
     u32x4(b, c, d, e)
@@ -333,19 +353,33 @@ fn sha1rnds4p(abcd: u32x4, msg: u32x4) -> u32x4 {
     let mut e = 0u32;
 
     macro_rules! bool3ary_150 {
-        ($a:expr, $b:expr, $c:expr) => (($a ^ $b ^ $c))
+        ($a:expr, $b:expr, $c:expr) => {
+            ($a ^ $b ^ $c)
+        };
     } // Parity, XOR, MD5H, SHA1P
 
-    e = e.wrapping_add(a.rotate_left(5)).wrapping_add(bool3ary_150!(b, c, d)).wrapping_add(t);
+    e = e
+        .wrapping_add(a.rotate_left(5))
+        .wrapping_add(bool3ary_150!(b, c, d))
+        .wrapping_add(t);
     b = b.rotate_left(30);
 
-    d = d.wrapping_add(e.rotate_left(5)).wrapping_add(bool3ary_150!(a, b, c)).wrapping_add(u);
+    d = d
+        .wrapping_add(e.rotate_left(5))
+        .wrapping_add(bool3ary_150!(a, b, c))
+        .wrapping_add(u);
     a = a.rotate_left(30);
 
-    c = c.wrapping_add(d.rotate_left(5)).wrapping_add(bool3ary_150!(e, a, b)).wrapping_add(v);
+    c = c
+        .wrapping_add(d.rotate_left(5))
+        .wrapping_add(bool3ary_150!(e, a, b))
+        .wrapping_add(v);
     e = e.rotate_left(30);
 
-    b = b.wrapping_add(c.rotate_left(5)).wrapping_add(bool3ary_150!(d, e, a)).wrapping_add(w);
+    b = b
+        .wrapping_add(c.rotate_left(5))
+        .wrapping_add(bool3ary_150!(d, e, a))
+        .wrapping_add(w);
     d = d.rotate_left(30);
 
     u32x4(b, c, d, e)
@@ -358,19 +392,33 @@ fn sha1rnds4m(abcd: u32x4, msg: u32x4) -> u32x4 {
     let mut e = 0u32;
 
     macro_rules! bool3ary_232 {
-        ($a:expr, $b:expr, $c:expr) => (($a & $b) ^ ($a & $c) ^ ($b & $c))
+        ($a:expr, $b:expr, $c:expr) => {
+            ($a & $b) ^ ($a & $c) ^ ($b & $c)
+        };
     } // Majority, SHA1M
 
-    e = e.wrapping_add(a.rotate_left(5)).wrapping_add(bool3ary_232!(b, c, d)).wrapping_add(t);
+    e = e
+        .wrapping_add(a.rotate_left(5))
+        .wrapping_add(bool3ary_232!(b, c, d))
+        .wrapping_add(t);
     b = b.rotate_left(30);
 
-    d = d.wrapping_add(e.rotate_left(5)).wrapping_add(bool3ary_232!(a, b, c)).wrapping_add(u);
+    d = d
+        .wrapping_add(e.rotate_left(5))
+        .wrapping_add(bool3ary_232!(a, b, c))
+        .wrapping_add(u);
     a = a.rotate_left(30);
 
-    c = c.wrapping_add(d.rotate_left(5)).wrapping_add(bool3ary_232!(e, a, b)).wrapping_add(v);
+    c = c
+        .wrapping_add(d.rotate_left(5))
+        .wrapping_add(bool3ary_232!(e, a, b))
+        .wrapping_add(v);
     e = e.rotate_left(30);
 
-    b = b.wrapping_add(c.rotate_left(5)).wrapping_add(bool3ary_232!(d, e, a)).wrapping_add(w);
+    b = b
+        .wrapping_add(c.rotate_left(5))
+        .wrapping_add(bool3ary_232!(d, e, a))
+        .wrapping_add(w);
     d = d.rotate_left(30);
 
     u32x4(b, c, d, e)
@@ -381,46 +429,32 @@ impl Sha1State {
         let mut words = [0u32; 16];
         for i in 0..16 {
             let off = i * 4;
-            words[i] = (block[off + 3] as u32) | ((block[off + 2] as u32) << 8) |
-                       ((block[off + 1] as u32) << 16) |
-                       ((block[off] as u32) << 24);
+            words[i] = (block[off + 3] as u32)
+                | ((block[off + 2] as u32) << 8)
+                | ((block[off + 1] as u32) << 16)
+                | ((block[off] as u32) << 24);
         }
         macro_rules! schedule {
-            ($v0:expr, $v1:expr, $v2:expr, $v3:expr) => (
+            ($v0:expr, $v1:expr, $v2:expr, $v3:expr) => {
                 sha1msg2(sha1msg1($v0, $v1) ^ $v2, $v3)
-            )
+            };
         }
 
         macro_rules! rounds4 {
-            ($h0:ident, $h1:ident, $wk:expr, $i:expr) => (
+            ($h0:ident, $h1:ident, $wk:expr, $i:expr) => {
                 sha1_digest_round_x4($h0, sha1_first_half($h1, $wk), $i)
-            )
+            };
         }
 
         // Rounds 0..20
-        let mut h0 = u32x4(self.state[0],
-                           self.state[1],
-                           self.state[2],
-                           self.state[3]);
-        let mut w0 = u32x4(words[0],
-                           words[1],
-                           words[2],
-                           words[3]);
+        let mut h0 = u32x4(self.state[0], self.state[1], self.state[2], self.state[3]);
+        let mut w0 = u32x4(words[0], words[1], words[2], words[3]);
         let mut h1 = sha1_digest_round_x4(h0, sha1_first_add(self.state[4], w0), 0);
-        let mut w1 = u32x4(words[4],
-                           words[5],
-                           words[6],
-                           words[7]);
+        let mut w1 = u32x4(words[4], words[5], words[6], words[7]);
         h0 = rounds4!(h1, h0, w1, 0);
-        let mut w2 = u32x4(words[8],
-                           words[9],
-                           words[10],
-                           words[11]);
+        let mut w2 = u32x4(words[8], words[9], words[10], words[11]);
         h1 = rounds4!(h0, h1, w2, 0);
-        let mut w3 = u32x4(words[12],
-                           words[13],
-                           words[14],
-                           words[15]);
+        let mut w3 = u32x4(words[12], words[13], words[14], words[15]);
         h0 = rounds4!(h1, h0, w3, 0);
         let mut w4 = schedule!(w0, w1, w2, w3);
         h1 = rounds4!(h0, h1, w4, 0);
@@ -515,7 +549,7 @@ impl fmt::Display for DigestParseError {
     }
 }
 
-#[cfg(feature="std")]
+#[cfg(feature = "std")]
 impl std::error::Error for DigestParseError {
     fn description(&self) -> &str {
         "not a valid sha1 hash"
@@ -531,8 +565,9 @@ impl str::FromStr for Digest {
         }
         let mut rv: Digest = Default::default();
         for idx in 0..5 {
-            rv.data.state[idx] = try!(u32::from_str_radix(&s[idx * 8..idx * 8 + 8], 16)
-                .map_err(|_| DigestParseError(())));
+            rv.data.state[idx] =
+                try!(u32::from_str_radix(&s[idx * 8..idx * 8 + 8], 16)
+                    .map_err(|_| DigestParseError(())));
         }
         Ok(rv)
     }
@@ -553,7 +588,7 @@ impl fmt::Debug for Digest {
     }
 }
 
-#[cfg(feature="serde")]
+#[cfg(feature = "serde")]
 impl serde::ser::Serialize for Digest {
     fn serialize<S>(&self, serializer: S) -> Result<S::Ok, S::Error>
     where
@@ -573,13 +608,11 @@ impl serde::ser::Serialize for Digest {
                 c += 2;
             }
         }
-        serializer.serialize_str(unsafe {
-            str::from_utf8_unchecked(&hex_str[..])
-        })
+        serializer.serialize_str(unsafe { str::from_utf8_unchecked(&hex_str[..]) })
     }
 }
 
-#[cfg(feature="serde")]
+#[cfg(feature = "serde")]
 impl<'de> serde::de::Deserialize<'de> for Digest {
     fn deserialize<D>(deserializer: D) -> Result<Self, D::Error>
     where
@@ -598,10 +631,9 @@ impl<'de> serde::de::Deserialize<'de> for Digest {
             where
                 E: serde::de::Error,
             {
-                value
-                    .parse()
-                    .map_err(|_| serde::de::Error::invalid_value(
-                        serde::de::Unexpected::Str(value), &self))
+                value.parse().map_err(|_| {
+                    serde::de::Error::invalid_value(serde::de::Unexpected::Str(value), &self)
+                })
             }
         }
 

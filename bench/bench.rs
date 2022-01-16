@@ -1,15 +1,16 @@
-extern crate sha1;
 extern crate ring;
+extern crate sha1_smol as sha1;
 
 use std::env;
 use std::fs;
 use std::io::{Read, Write};
-use std::time::{Instant, Duration};
 use std::process::{Command, Stdio};
+use std::time::{Duration, Instant};
 
 fn time<F, FMT>(desc: &str, f: F, fmt: FMT)
-    where F: Fn(),
-          FMT: Fn(Duration) -> String
+where
+    F: Fn(),
+    FMT: Fn(Duration) -> String,
 {
     let start = Instant::now();
     f();
@@ -37,32 +38,38 @@ fn main() {
     };
 
     if env::var("WITHOUT_SHA1SUM") != Ok("1".into()) {
-        time("sha1sum program",
-             || {
-            let mut child = Command::new("sha1sum")
-                .stdin(Stdio::piped())
-                .spawn()
-                .unwrap();
-            if let Some(ref mut stdin) = child.stdin {
-                stdin.write(&out).unwrap();
-            }
-            child.wait().unwrap();
-        },
-             &throughput);
+        time(
+            "sha1sum program",
+            || {
+                let mut child = Command::new("sha1sum")
+                    .stdin(Stdio::piped())
+                    .spawn()
+                    .unwrap();
+                if let Some(ref mut stdin) = child.stdin {
+                    stdin.write(&out).unwrap();
+                }
+                child.wait().unwrap();
+            },
+            &throughput,
+        );
     }
 
-    time("sha1 crate",
-         || {
-             let mut sha1 = sha1::Sha1::new();
-             sha1.update(&out);
-             println!("{}", sha1.digest());
-         },
-         &throughput);
+    time(
+        "sha1 crate",
+        || {
+            let mut sha1 = sha1::Sha1::new();
+            sha1.update(&out);
+            println!("{}", sha1.digest());
+        },
+        &throughput,
+    );
 
-    time("ring crate",
-         || {
-             let digest = ring::digest::digest(&ring::digest::SHA1, &out);
-             println!("{:?}", digest);
-         },
-         &throughput);
+    time(
+        "ring crate",
+        || {
+            let digest = ring::digest::digest(&ring::digest::SHA1, &out);
+            println!("{:?}", digest);
+        },
+        &throughput,
+    );
 }
