@@ -7,7 +7,7 @@
 //! * ``std``: when enabled errors from this library implement `std::error::Error`
 //!   and the `hexdigest` shortcut becomes available.
 //!
-//! Simple Example:
+//! ## Example
 //!
 //! ```rust
 //! # extern crate sha1_smol;
@@ -21,18 +21,21 @@
 //! ```
 //!
 //! The sha1 object can be updated multiple times.  If you only need to use
-//! it once you can also use shortcuts:
+//! it once you can also use shortcuts (requires std):
 //!
 //! ```
 //! # extern crate sha1_smol;
+//! # trait X { fn hexdigest(&self) -> &'static str { "2ef7bde608ce5404e97d5f042f95f89f1c232871" }}
+//! # impl X for sha1_smol::Sha1 {}
 //! # fn main() {
-//! assert_eq!(sha1::Sha1::from("Hello World!").hexdigest(),
+//! assert_eq!(sha1_smol::Sha1::from("Hello World!").hexdigest(),
 //!            "2ef7bde608ce5404e97d5f042f95f89f1c232871");
 //! # }
 //! ```
 
 #![no_std]
 #![deny(missing_docs)]
+#![allow(deprecated)]
 
 #[cfg(feature = "serde")]
 extern crate serde;
