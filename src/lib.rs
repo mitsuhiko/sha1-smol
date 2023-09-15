@@ -42,6 +42,9 @@ use core::str;
 mod simd;
 use crate::simd::*;
 
+#[cfg(feature = "alloc")]
+extern crate alloc;
+
 #[cfg(feature = "std")]
 extern crate std;
 
@@ -175,8 +178,8 @@ impl Sha1 {
 
     /// Retrieve the digest result as hex string directly.
     ///
-    /// (The function is only available if the `std` feature is enabled)
-    #[cfg(feature = "std")]
+    /// (The function is only available if the `alloc` feature is enabled)
+    #[cfg(feature = "alloc")]
     pub fn hexdigest(&self) -> std::string::String {
         use std::string::ToString;
         self.digest().to_string()
@@ -641,6 +644,7 @@ impl<'de> serde::de::Deserialize<'de> for Digest {
 #[cfg(test)]
 mod tests {
     extern crate std;
+    extern crate alloc;
     extern crate rand;
     extern crate openssl;
 
@@ -687,7 +691,7 @@ mod tests {
         let s = Sha1::from(&b"The quick brown fox jumps over the lazy dog"[..]);
         assert_eq!(s.digest().to_string(), "2fd4e1c67a2d28fced849ee1bb76e7391b93eb12");
 
-        #[cfg(feature="std")] {
+        #[cfg(feature="alloc")] {
             let s = Sha1::from("The quick brown fox jumps over the lazy dog");
             assert_eq!(s.hexdigest(), "2fd4e1c67a2d28fced849ee1bb76e7391b93eb12");
         }
