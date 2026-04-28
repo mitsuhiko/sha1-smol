@@ -731,7 +731,7 @@ mod tests {
 
     #[test]
     fn spray_and_pray() {
-        use self::rand::Rng;
+        use self::rand::{Rng, RngCore};
 
         let mut rng = rand::thread_rng();
         let mut m = Sha1::new();
